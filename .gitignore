@@ -1,0 +1,71 @@
+# Dependencies
+node_modules/
+.pnpm-store/
+venv/
+__pycache__/
+*.pyc
+
+# Build outputs
+dist/
+build/
+.next/
+out/
+
+# Environment
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+npm-debug.log*
+pnpm-debug.log*
+
+# Testing
+coverage/
+.nyc_output/
+
+# Turbo
+.turbo/
+
+# Docker
+docker-compose.override.yml
+
+# Python
+.mypy_cache/
+.pytest_cache/
+.ruff_cache/
+*.egg-info/
+
+# ML
+ml/models/*.onnx
+ml/models/*.pt
+ml/models/*.pth
+ml/datasets/raw/
+ml/datasets/processed/
+ml/notebooks/.ipynb_checkpoints/
+
+# Prisma
+packages/database/prisma/migrations/
+
+# Expo
+apps/mobile/.expo/
+apps/mobile/ios/
+apps/mobile/android/
+
+# Secrets
+*.pem
+*.key

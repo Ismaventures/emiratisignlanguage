@@ -1,0 +1,35 @@
+{
+  "name": "emirsign-ai",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Enterprise AI platform for Emirati Sign Language translation",
+  "license": "UNLICENSED",
+  "engines": {
+    "node": ">=20.0.0",
+    "pnpm": ">=9.0.0"
+  },
+  "packageManager": "pnpm@9.15.0",
+  "scripts": {
+    "dev": "turbo dev",
+    "build": "turbo build",
+    "lint": "turbo lint",
+    "test": "turbo test",
+    "typecheck": "turbo typecheck",
+    "clean": "turbo clean",
+    "db:generate": "pnpm --filter @emirsign/database generate",
+    "db:push": "pnpm --filter @emirsign/database push",
+    "db:migrate": "pnpm --filter @emirsign/database migrate",
+    "db:seed": "pnpm --filter @emirsign/database seed",
+    "db:studio": "pnpm --filter @emirsign/database studio",
+    "docker:up": "docker compose up -d",
+    "docker:down": "docker compose down",
+    "docker:logs": "docker compose logs -f",
+    "prepare": "husky"
+  },
+  "devDependencies": {
+    "@changesets/cli": "^2.27.0",
+    "husky": "^9.1.0",
+    "lint-staged": "^15.2.0",
+    "turbo": "^2.3.0"
+  }
+}

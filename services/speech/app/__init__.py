@@ -1,0 +1,1 @@
+"""EmirSign AI - Speech Service."""

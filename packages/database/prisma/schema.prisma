@@ -1,0 +1,362 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ─── Users & Auth ──────────────────────────────────────────
+
+model User {
+  id            String    @id @default(uuid())
+  email         String    @unique
+  passwordHash  String    @map("password_hash")
+  name          String
+  role          UserRole  @default(USER)
+  avatarUrl     String?   @map("avatar_url")
+  emailVerified Boolean   @default(false) @map("email_verified")
+  createdAt     DateTime  @default(now()) @map("created_at")
+  updatedAt     DateTime  @updatedAt @map("updated_at")
+
+  sessions            UserSession[]
+  conversations       Conversation[]
+  feedback            Feedback[]
+  datasets            Dataset[]             @relation("CreatedDatasets")
+  mlModels            MLModel[]             @relation("CreatedModels")
+  analyticsEvents     AnalyticsEvent[]
+  passwordResets      PasswordReset[]
+  emailVerifications  EmailVerification[]
+
+  @@map("users")
+}
+
+enum UserRole {
+  ADMIN
+  USER
+  INTERPRETER
+}
+
+model UserSession {
+  id           String   @id @default(uuid())
+  userId       String   @map("user_id")
+  refreshToken String   @unique @map("refresh_token")
+  deviceInfo   String?  @map("device_info")
+  expiresAt    DateTime @map("expires_at")
+  createdAt    DateTime @default(now()) @map("created_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@map("user_sessions")
+}
+
+model EmailVerification {
+  id        String   @id @default(uuid())
+  userId    String   @map("user_id")
+  token     String   @unique
+  expiresAt DateTime @map("expires_at")
+  createdAt DateTime @default(now()) @map("created_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("email_verifications")
+}
+
+model PasswordReset {
+  id        String   @id @default(uuid())
+  userId    String   @map("user_id")
+  token     String   @unique
+  expiresAt DateTime @map("expires_at")
+  createdAt DateTime @default(now()) @map("created_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("password_resets")
+}
+
+// ─── Conversations ─────────────────────────────────────────
+
+model Conversation {
+  id            String             @id @default(uuid())
+  userId        String             @map("user_id")
+  title         String
+  languagePair  String             @map("language_pair")
+  status        ConversationStatus @default(ACTIVE)
+  createdAt     DateTime           @default(now()) @map("created_at")
+  updatedAt     DateTime           @updatedAt @map("updated_at")
+
+  user     User                  @relation(fields: [userId], references: [id], onDelete: Cascade)
+  messages ConversationMessage[]
+  feedback Feedback[]
+
+  @@index([userId])
+  @@map("conversations")
+}
+
+enum ConversationStatus {
+  ACTIVE
+  ARCHIVED
+  DELETED
+}
+
+model ConversationMessage {
+  id             String     @id @default(uuid())
+  conversationId String     @map("conversation_id")
+  senderType     SenderType @map("sender_type")
+  contentType    ContentType @map("content_type")
+  content        String
+  translationAr  String?    @map("translation_ar")
+  translationEn  String?    @map("translation_en")
+  confidence     Float?
+  createdAt      DateTime   @default(now()) @map("created_at")
+
+  conversation Conversation          @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  videoRefs    ConversationVideoRef[]
+
+  @@index([conversationId])
+  @@map("conversation_messages")
+}
+
+enum SenderType {
+  USER
+  SYSTEM
+  INTERPRETER
+}
+
+enum ContentType {
+  SIGN
+  TEXT
+  SPEECH
+  AVATAR
+}
+
+model ConversationVideoRef {
+  id          String   @id @default(uuid())
+  messageId   String   @map("message_id")
+  storageKey  String   @map("storage_key")
+  durationMs  Int      @map("duration_ms")
+  thumbnailKey String? @map("thumbnail_key")
+
+  message ConversationMessage @relation(fields: [messageId], references: [id], onDelete: Cascade)
+
+  @@index([messageId])
+  @@map("conversation_video_refs")
+}
+
+// ─── Datasets ──────────────────────────────────────────────
+
+model Dataset {
+  id          String       @id @default(uuid())
+  name        String
+  description String?
+  language    String
+  version     Int          @default(1)
+  status      DatasetStatus @default(DRAFT)
+  createdBy   String       @map("created_by")
+  createdAt   DateTime     @default(now()) @map("created_at")
+  updatedAt   DateTime     @updatedAt @map("updated_at")
+
+  creator    User              @relation("CreatedDatasets", fields: [createdBy], references: [id])
+  videos     DatasetVideo[]
+  splits     DatasetSplit[]
+
+  @@map("datasets")
+}
+
+enum DatasetStatus {
+  DRAFT
+  PROCESSING
+  READY
+  ARCHIVED
+}
+
+model DatasetVideo {
+  id          String   @id @default(uuid())
+  datasetId   String   @map("dataset_id")
+  storageKey  String   @map("storage_key")
+  durationMs  Int      @map("duration_ms")
+  signerId    String?  @map("signer_id")
+  lighting    String?
+  angle       String?
+  createdAt   DateTime @default(now()) @map("created_at")
+
+  dataset     Dataset              @relation(fields: [datasetId], references: [id], onDelete: Cascade)
+  annotations DatasetAnnotation[]
+
+  @@index([datasetId])
+  @@map("dataset_videos")
+}
+
+model DatasetAnnotation {
+  id            String   @id @default(uuid())
+  videoId       String   @map("video_id")
+  frameNumber   Int      @map("frame_number")
+  landmarksJson String   @map("landmarks_json")
+  gestureLabel  String   @map("gesture_label")
+  sentenceLabel String?  @map("sentence_label")
+  annotatedBy   String   @map("annotated_by")
+  createdAt     DateTime @default(now()) @map("created_at")
+
+  video DatasetVideo @relation(fields: [videoId], references: [id], onDelete: Cascade)
+
+  @@index([videoId])
+  @@index([gestureLabel])
+  @@map("dataset_annotations")
+}
+
+model DatasetSplit {
+  id          String   @id @default(uuid())
+  datasetId   String   @map("dataset_id")
+  splitType   SplitType @map("split_type")
+  percentage  Float
+  videoIds    String   @map("video_ids") // JSON array of video IDs
+  createdAt   DateTime @default(now()) @map("created_at")
+
+  dataset Dataset @relation(fields: [datasetId], references: [id], onDelete: Cascade)
+
+  @@unique([datasetId, splitType])
+  @@map("dataset_splits")
+}
+
+enum SplitType {
+  TRAIN
+  VALIDATION
+  TEST
+}
+
+// ─── ML Models ─────────────────────────────────────────────
+
+model MLModel {
+  id          String      @id @default(uuid())
+  name        String
+  type        ModelType
+  version     String
+  architecture String
+  metricsJson Json        @default("{}") @map("metrics_json")
+  storageKey  String      @map("storage_key")
+  status      ModelStatus @default(TRAINING)
+  createdBy   String      @map("created_by")
+  createdAt   DateTime    @default(now()) @map("created_at")
+
+  creator     User              @relation("CreatedModels", fields: [createdBy], references: [id])
+  deployments ModelDeployment[]
+  experiments ModelExperiment[]
+
+  @@unique([name, version])
+  @@map("ml_models")
+}
+
+enum ModelType {
+  GESTURE_CLASSIFIER
+  SEQUENCE_RECOGNIZER
+  TRANSLATOR
+  FACE_MESH
+}
+
+enum ModelStatus {
+  TRAINING
+  READY
+  DEPLOYED
+  ARCHIVED
+  FAILED
+}
+
+model ModelDeployment {
+  id                 String           @id @default(uuid())
+  modelId            String           @map("model_id")
+  environment        DeploymentEnv
+  status             DeploymentStatus @default(ACTIVE)
+  trafficPercentage  Float            @default(100) @map("traffic_percentage")
+  deployedAt         DateTime         @default(now()) @map("deployed_at")
+  rolledBackAt       DateTime?        @map("rolled_back_at")
+
+  model MLModel @relation(fields: [modelId], references: [id], onDelete: Cascade)
+
+  @@index([modelId])
+  @@map("ml_model_deployments")
+}
+
+enum DeploymentEnv {
+  STAGING
+  PRODUCTION
+}
+
+enum DeploymentStatus {
+  ACTIVE
+  INACTIVE
+  CANARY
+}
+
+model ModelExperiment {
+  id          String   @id @default(uuid())
+  modelId     String   @map("model_id")
+  name        String
+  configJson  Json     @map("config_json")
+  metricsJson Json     @map("metrics_json")
+  status      String
+  createdAt   DateTime @default(now()) @map("created_at")
+
+  model MLModel @relation(fields: [modelId], references: [id], onDelete: Cascade)
+
+  @@index([modelId])
+  @@map("ml_model_experiments")
+}
+
+// ─── Analytics ─────────────────────────────────────────────
+
+model AnalyticsEvent {
+  id           String   @id @default(uuid())
+  eventType    String   @map("event_type")
+  userId       String?  @map("user_id")
+  sessionId    String?  @map("session_id")
+  metadataJson Json     @default("{}") @map("metadata_json")
+  createdAt    DateTime @default(now()) @map("created_at")
+
+  user User? @relation(fields: [userId], references: [id], onDelete: SetNull)
+
+  @@index([eventType])
+  @@index([userId])
+  @@index([createdAt])
+  @@map("analytics_events")
+}
+
+model SystemMetric {
+  id           String   @id @default(uuid())
+  metricName   String   @map("metric_name")
+  metricValue  Float    @map("metric_value")
+  tagsJson     Json     @default("{}") @map("tags_json")
+  recordedAt   DateTime @default(now()) @map("recorded_at")
+
+  @@index([metricName])
+  @@index([recordedAt])
+  @@map("system_metrics")
+}
+
+// ─── Feedback ──────────────────────────────────────────────
+
+model Feedback {
+  id             String           @id @default(uuid())
+  userId         String           @map("user_id")
+  conversationId String?          @map("conversation_id")
+  rating         Int
+  comment        String?
+  category       FeedbackCategory
+  createdAt      DateTime         @default(now()) @map("created_at")
+
+  user         User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  conversation Conversation? @relation(fields: [conversationId], references: [id], onDelete: SetNull)
+
+  @@index([userId])
+  @@index([conversationId])
+  @@map("feedback")
+}
+
+enum FeedbackCategory {
+  ACCURACY
+  LATENCY
+  UX
+  BUG
+  OTHER
+}

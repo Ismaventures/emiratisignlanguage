@@ -1,0 +1,153 @@
+version: '3.9'
+
+services:
+  # ─── Infrastructure ─────────────────────────────────────
+  postgres:
+    image: postgres:16-alpine
+    container_name: emirsign-postgres
+    restart: unless-stopped
+    ports:
+      - '5432:5432'
+    environment:
+      POSTGRES_USER: emirsign
+      POSTGRES_PASSWORD: emirsign_password
+      POSTGRES_DB: emirsign
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U emirsign -d emirsign']
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  redis:
+    image: redis:7-alpine
+    container_name: emirsign-redis
+    restart: unless-stopped
+    ports:
+      - '6379:6379'
+    command: redis-server --appendonly yes
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ['CMD', 'redis-cli', 'ping']
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  minio:
+    image: minio/minio:latest
+    container_name: emirsign-minio
+    restart: unless-stopped
+    ports:
+      - '9000:9000'
+      - '9001:9001'
+    environment:
+      MINIO_ROOT_USER: minioadmin
+      MINIO_ROOT_PASSWORD: minioadmin
+    command: server /data --console-address ":9001"
+    volumes:
+      - minio_data:/data
+
+  mailhog:
+    image: mailhog/mailhog:latest
+    container_name: emirsign-mailhog
+    restart: unless-stopped
+    ports:
+      - '1025:1025'
+      - '8025:8025'
+
+  # ─── AI Services ────────────────────────────────────────
+  vision-service:
+    build:
+      context: .
+      dockerfile: infrastructure/docker/vision.Dockerfile
+    container_name: emirsign-vision
+    restart: unless-stopped
+    ports:
+      - '8001:8001'
+    environment:
+      - DEBUG=false
+      - MEDIPAPE_CONFIDENCE=0.7
+    volumes:
+      - ./ml/models:/app/models
+    depends_on:
+      redis:
+        condition: service_healthy
+
+  nlp-service:
+    build:
+      context: .
+      dockerfile: infrastructure/docker/nlp.Dockerfile
+    container_name: emirsign-nlp
+    restart: unless-stopped
+    ports:
+      - '8002:8002'
+    environment:
+      - DEBUG=false
+    depends_on:
+      redis:
+        condition: service_healthy
+
+  speech-service:
+    build:
+      context: .
+      dockerfile: infrastructure/docker/speech.Dockerfile
+    container_name: emirsign-speech
+    restart: unless-stopped
+    ports:
+      - '8003:8003'
+    environment:
+      - DEBUG=false
+      - WHISPER_MODEL_SIZE=base
+    volumes:
+      - ./ml/models:/app/models
+    depends_on:
+      redis:
+        condition: service_healthy
+
+  # ─── API ────────────────────────────────────────────────
+  api:
+    build:
+      context: .
+      dockerfile: infrastructure/docker/api.Dockerfile
+    container_name: emirsign-api
+    restart: unless-stopped
+    ports:
+      - '3001:3001'
+    environment:
+      - NODE_ENV=production
+      - DATABASE_URL=postgresql://emirsign:emirsign_password@postgres:5432/emirsign
+      - REDIS_URL=redis://redis:6379
+      - VISION_SERVICE_URL=http://vision-service:8001
+      - NLP_SERVICE_URL=http://nlp-service:8002
+      - SPEECH_SERVICE_URL=http://speech-service:8003
+      - JWT_SECRET=change-this-in-production
+      - STORAGE_ENDPOINT=minio
+      - STORAGE_ACCESS_KEY=minioadmin
+      - STORAGE_SECRET_KEY=minioadmin
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+
+  # ─── Nginx ──────────────────────────────────────────────
+  nginx:
+    image: nginx:alpine
+    container_name: emirsign-nginx
+    restart: unless-stopped
+    ports:
+      - '80:80'
+    volumes:
+      - ./infrastructure/nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+    depends_on:
+      - api
+      - vision-service
+      - nlp-service
+      - speech-service
+
+volumes:
+  postgres_data:
+  redis_data:
+  minio_data:

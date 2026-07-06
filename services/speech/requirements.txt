@@ -1,0 +1,10 @@
+fastapi==0.115.0
+uvicorn[standard]==0.32.0
+python-dotenv==1.0.1
+pydantic==2.10.0
+pydantic-settings==2.6.0
+httpx==0.28.0
+openai-whisper==20240930
+piper-tts==1.2.0
+soundfile==0.12.1
+numpy==1.26.4
