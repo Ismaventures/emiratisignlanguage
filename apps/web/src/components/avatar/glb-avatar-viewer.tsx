@@ -4,7 +4,7 @@ import React, { useState, useCallback, useEffect, useRef } from 'react';
 import dynamic from 'next/dynamic';
 import { translateToSignLanguage, type TranslationResult } from '@/lib/avatar/text-to-sign';
 import { ESL_SIGNS } from '@/lib/avatar/esl-sign-database';
-import { ARABIC_LADY, type AvatarConfig } from '@/lib/avatar/rpm-avatar';
+import { DEFAULT_AVATAR, type AvatarConfig } from '@/lib/avatar/rpm-avatar';
 
 const GlbAvatarScene = dynamic(
   () => import('./glb-avatar-scene').then((mod) => mod.GlbAvatarScene),
@@ -93,7 +93,7 @@ export function GlbAvatarViewer({ text = '', avatarConfig }: GlbAvatarViewerProp
     };
   }, []);
 
-  const config = avatarConfig || ARABIC_LADY;
+  const config = avatarConfig || DEFAULT_AVATAR;
 
   return (
     <div className="flex h-full flex-col gap-3">
@@ -104,7 +104,7 @@ export function GlbAvatarViewer({ text = '', avatarConfig }: GlbAvatarViewerProp
           signs={signs}
           autoPlay={true}
           height={avatarHeight}
-          onAnimationStateChange={(state, token) => {
+          onAnimationStateChange={(state: string, token: string) => {
             setCurrentSign(state === 'playing' ? token : '');
           }}
         />

@@ -2,6 +2,8 @@
 
 import * as THREE from 'three';
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
+import { DRACOLoader } from 'three/examples/jsm/loaders/DRACOLoader.js';
+import { MeshoptDecoder } from 'three/examples/jsm/libs/meshopt_decoder.module.js';
 
 export interface AvatarConfig {
   id: string;
@@ -47,6 +49,20 @@ export async function loadAvatarGLB(
 }> {
   const loader = new GLTFLoader();
 
+  try {
+    const dracoLoader = new DRACOLoader();
+    dracoLoader.setDecoderPath('https://www.gstatic.com/draco/versioned/decoders/1.5.7/');
+    loader.setDRACOLoader(dracoLoader);
+  } catch {
+    // DRACO not needed
+  }
+
+  try {
+    loader.setMeshoptDecoder(MeshoptDecoder);
+  } catch {
+    // Meshopt not needed
+  }
+
   const gltf = await new Promise<any>((resolve, reject) => {
     loader.load(
       url,
@@ -63,11 +79,14 @@ export async function loadAvatarGLB(
   const morphTargetDictionary = new Map<string, THREE.Object3D>();
 
   gltf.scene.traverse((child: THREE.Object3D) => {
-    if (
-      child instanceof THREE.Mesh &&
-      child.morphTargetDictionary
-    ) {
-      morphTargetDictionary.set(child.name, child);
+    if ((child as THREE.Mesh).isMesh) {
+      child.castShadow = true;
+      child.receiveShadow = true;
+      child.frustumCulled = false;
+      
+      if ((child as THREE.Mesh).morphTargetDictionary) {
+        morphTargetDictionary.set(child.name, child);
+      }
     }
   });
 

@@ -1,12 +1,12 @@
 'use client';
 
-import { ANIMATION_DATABASE, lookupGesture, type AnimationEntry } from './animation-database';
+import { ESL_SIGNS } from './esl-sign-database';
+import { SSL_SIGNS } from './ssl-sign-database';
 
 export interface SignToken {
   text: string;
   uppercase: string;
   hasAnimation: boolean;
-  animationEntry: AnimationEntry | null;
   needsFingerspelling: boolean;
 }
 
@@ -14,7 +14,6 @@ export interface TranslationResult {
   originalText: string;
   normalizedText: string;
   tokens: SignToken[];
-  animationSequence: string[];
   cachedAt?: number;
 }
 
@@ -46,7 +45,7 @@ const SIGN_GRAMMAR_MAP: Record<string, string> = {
   'how are you': 'HOW_YOU',
   'my name is': 'NAME',
   'what is your name': 'WHAT_NAME',
-  'i love you': 'LOVE_YOU',
+  'i love you': 'LOVE',
   'see you later': 'GOODBYE',
   'excuse me': 'PLEASE',
   "i don't understand": 'DONT_UNDERSTAND',
@@ -142,32 +141,66 @@ export function convertToSignGrammar(normalizedText: string): string[] {
   return result;
 }
 
-export function tokenizeForSigning(signTokens: string[]): SignToken[] {
-  return signTokens.map((token) => {
-    const entry = lookupGesture(token);
-    return {
-      text: token.toLowerCase(),
-      uppercase: token,
-      hasAnimation: entry !== null,
-      animationEntry: entry,
-      needsFingerspelling: entry === null,
-    };
-  });
+export function lookupSign(word: string, dialect: 'ESL' | 'SSL' = 'SSL') {
+  const upperWord = word.toUpperCase();
+  
+  if (dialect === 'SSL') {
+    // Check SSL dictionary first (using English or Arabic mapping)
+    for (const [key, entry] of Object.entries(SSL_SIGNS)) {
+      if (key === upperWord || entry.english.toUpperCase() === upperWord || entry.arabic === word) {
+        return { key, entry, dialect: 'SSL' };
+      }
+    }
+  }
+
+  // Fallback to ESL dictionary
+  if (ESL_SIGNS[upperWord]) {
+    return { key: upperWord, entry: ESL_SIGNS[upperWord], dialect: 'ESL' };
+  }
+  
+  // Try to find a partial match in ESL
+  for (const [key, entry] of Object.entries(ESL_SIGNS)) {
+    if (entry.english.toUpperCase() === upperWord) {
+      return { key, entry, dialect: 'ESL' };
+    }
+  }
+  
+  return null;
 }
 
-export function buildAnimationSequence(tokens: SignToken[]): string[] {
-  return tokens.map((token) => {
-    if (token.animationEntry) {
-      return token.animationEntry.glbPath;
+export function tokenizeForSigning(signTokens: string[], dialect: 'ESL' | 'SSL' = 'SSL'): SignToken[] {
+  const finalTokens: SignToken[] = [];
+  
+  for (const token of signTokens) {
+    const entry = lookupSign(token, dialect);
+    if (entry) {
+      finalTokens.push({
+        text: token.toLowerCase(),
+        uppercase: token,
+        hasAnimation: true,
+        needsFingerspelling: false,
+      });
+    } else {
+      // Split into letters for fingerspelling
+      for (const char of token) {
+        if (/[A-Z]/.test(char.toUpperCase())) {
+          finalTokens.push({
+            text: char.toLowerCase(),
+            uppercase: char.toUpperCase(),
+            hasAnimation: false,
+            needsFingerspelling: true,
+          });
+        }
+      }
     }
-    const letter = token.uppercase[0];
-    return `/animations/fingerspelling/${letter.toLowerCase()}.glb`;
-  });
+  }
+  return finalTokens;
 }
 
 export async function translateToSignLanguage(
   text: string,
   useHuggingFace = true,
+  dialect: 'ESL' | 'SSL' = 'SSL'
 ): Promise<TranslationResult> {
   const cacheKey = text.toLowerCase().trim();
   const cached = translationCache.get(cacheKey);
@@ -189,13 +222,10 @@ export async function translateToSignLanguage(
   }
 
   const tokens = tokenizeForSigning(signTokens);
-  const animationSequence = buildAnimationSequence(tokens);
-
   const result: TranslationResult = {
     originalText: text,
     normalizedText: normalized,
     tokens,
-    animationSequence,
     cachedAt: Date.now(),
   };
 
@@ -227,8 +257,4 @@ export function getCachedTranslation(text: string): TranslationResult | null {
 
 export function clearTranslationCache(): void {
   translationCache.clear();
-}
-
-export function getAvailableGestures(): AnimationEntry[] {
-  return ANIMATION_DATABASE;
 }

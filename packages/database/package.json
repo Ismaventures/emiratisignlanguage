@@ -13,6 +13,7 @@
     "migrate": "prisma migrate dev",
     "migrate:prod": "prisma migrate deploy",
     "seed": "tsx src/seed.ts",
+    "ingest-ssl": "tsx src/ingest-ssl.ts",
     "studio": "prisma studio",
     "typecheck": "tsc --noEmit",
     "clean": "rm -rf dist node_modules"

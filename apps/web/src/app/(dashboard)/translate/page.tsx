@@ -28,20 +28,10 @@ export default function TranslatePage() {
   const [translation, setTranslation] = useState<TranslationResult | null>(null);
   const [currentSign, setCurrentSign] = useState('');
   const [isTranslating, setIsTranslating] = useState(false);
-  const [avatarHeight, setAvatarHeight] = useState(500);
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const { addToast } = useToast();
-
-  useEffect(() => {
-    const el = containerRef.current;
-    if (!el) return;
-    const obs = new ResizeObserver((entries) => {
-      for (const entry of entries) setAvatarHeight(entry.contentRect.height);
-    });
-    obs.observe(el);
-    return () => obs.disconnect();
-  }, []);
+  // Removed ResizeObserver to prevent canvas sizing loops
 
   const runTranslation = useCallback(async (txt: string) => {
     if (!txt.trim()) { setSigns([]); setTranslation(null); return; }
@@ -88,15 +78,18 @@ export default function TranslatePage() {
     <div className="flex h-screen gap-4 p-4">
       {/* Left: Big Avatar */}
       <div ref={containerRef} className="flex-1 min-w-0 relative">
-        <GlbAvatarScene
-          avatarConfig={config}
-          signs={signs}
-          autoPlay={true}
-          height={avatarHeight}
-          onAnimationStateChange={(state, token) => {
-            setCurrentSign(state === 'playing' ? token : '');
-          }}
-        />
+        <div className="absolute inset-0">
+          <GlbAvatarScene
+            avatarConfig={config}
+            signs={signs}
+            autoPlay={true}
+            width="100%"
+            height="100%"
+            onAnimationStateChange={(state: string, token: string) => {
+              setCurrentSign(state === 'playing' ? token : '');
+            }}
+          />
+        </div>
       </div>
 
       {/* Right: Text Input + Phrases */}

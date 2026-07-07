@@ -2,7 +2,7 @@
 
 import React, { useRef, useEffect, useCallback, useState } from 'react';
 import { Canvas, useFrame, useThree } from '@react-three/fiber';
-import { OrbitControls, ContactShadows } from '@react-three/drei';
+import { OrbitControls, ContactShadows, Html } from '@react-three/drei';
 import * as THREE from 'three';
 import {
   loadAvatarGLB,
@@ -13,7 +13,7 @@ import {
 } from '@/lib/avatar/rpm-avatar';
 import { BlendshapeManager } from '@/lib/avatar/animics-blendshapes';
 import { buildBoneMap, findMixamoBone } from '@/lib/avatar/animics-skeleton';
-import { ESL_SIGNS, type SignEntry } from '@/lib/avatar/esl-sign-database';
+import { ESL_SIGNS, FINGERSPELLING, type SignEntry } from '@/lib/avatar/esl-sign-database';
 
 // Updated bone map — uses Animics-style mapping with multiple naming conventions
 const MIXAMO_BONE_MAP: Record<string, string[]> = {
@@ -37,6 +37,40 @@ const MIXAMO_BONE_MAP: Record<string, string[]> = {
   LeftUpLeg: ['mixamorigLeftUpLeg', 'LeftUpLeg', 'upleg_l'],
   LeftLeg: ['mixamorigLeftLeg', 'LeftLeg', 'leg_l'],
   LeftFoot: ['mixamorigLeftFoot', 'LeftFoot', 'foot_l'],
+  
+  // Right Fingers
+  RightHandThumb1: ['mixamorigRightHandThumb1', 'RightHandThumb1', 'thumb_01_r'],
+  RightHandThumb2: ['mixamorigRightHandThumb2', 'RightHandThumb2', 'thumb_02_r'],
+  RightHandThumb3: ['mixamorigRightHandThumb3', 'RightHandThumb3', 'thumb_03_r'],
+  RightHandIndex1: ['mixamorigRightHandIndex1', 'RightHandIndex1', 'index_01_r'],
+  RightHandIndex2: ['mixamorigRightHandIndex2', 'RightHandIndex2', 'index_02_r'],
+  RightHandIndex3: ['mixamorigRightHandIndex3', 'RightHandIndex3', 'index_03_r'],
+  RightHandMiddle1: ['mixamorigRightHandMiddle1', 'RightHandMiddle1', 'middle_01_r'],
+  RightHandMiddle2: ['mixamorigRightHandMiddle2', 'RightHandMiddle2', 'middle_02_r'],
+  RightHandMiddle3: ['mixamorigRightHandMiddle3', 'RightHandMiddle3', 'middle_03_r'],
+  RightHandRing1: ['mixamorigRightHandRing1', 'RightHandRing1', 'ring_01_r'],
+  RightHandRing2: ['mixamorigRightHandRing2', 'RightHandRing2', 'ring_02_r'],
+  RightHandRing3: ['mixamorigRightHandRing3', 'RightHandRing3', 'ring_03_r'],
+  RightHandPinky1: ['mixamorigRightHandPinky1', 'RightHandPinky1', 'pinky_01_r'],
+  RightHandPinky2: ['mixamorigRightHandPinky2', 'RightHandPinky2', 'pinky_02_r'],
+  RightHandPinky3: ['mixamorigRightHandPinky3', 'RightHandPinky3', 'pinky_03_r'],
+  
+  // Left Fingers
+  LeftHandThumb1: ['mixamorigLeftHandThumb1', 'LeftHandThumb1', 'thumb_01_l'],
+  LeftHandThumb2: ['mixamorigLeftHandThumb2', 'LeftHandThumb2', 'thumb_02_l'],
+  LeftHandThumb3: ['mixamorigLeftHandThumb3', 'LeftHandThumb3', 'thumb_03_l'],
+  LeftHandIndex1: ['mixamorigLeftHandIndex1', 'LeftHandIndex1', 'index_01_l'],
+  LeftHandIndex2: ['mixamorigLeftHandIndex2', 'LeftHandIndex2', 'index_02_l'],
+  LeftHandIndex3: ['mixamorigLeftHandIndex3', 'LeftHandIndex3', 'index_03_l'],
+  LeftHandMiddle1: ['mixamorigLeftHandMiddle1', 'LeftHandMiddle1', 'middle_01_l'],
+  LeftHandMiddle2: ['mixamorigLeftHandMiddle2', 'LeftHandMiddle2', 'middle_02_l'],
+  LeftHandMiddle3: ['mixamorigLeftHandMiddle3', 'LeftHandMiddle3', 'middle_03_l'],
+  LeftHandRing1: ['mixamorigLeftHandRing1', 'LeftHandRing1', 'ring_01_l'],
+  LeftHandRing2: ['mixamorigLeftHandRing2', 'LeftHandRing2', 'ring_02_l'],
+  LeftHandRing3: ['mixamorigLeftHandRing3', 'LeftHandRing3', 'ring_03_l'],
+  LeftHandPinky1: ['mixamorigLeftHandPinky1', 'LeftHandPinky1', 'pinky_01_l'],
+  LeftHandPinky2: ['mixamorigLeftHandPinky2', 'LeftHandPinky2', 'pinky_02_l'],
+  LeftHandPinky3: ['mixamorigLeftHandPinky3', 'LeftHandPinky3', 'pinky_03_l'],
 };
 
 function findBoneFlexible(root: THREE.Object3D, names: string[]): THREE.Object3D | null {
@@ -86,18 +120,41 @@ function AvatarGLBScene({
   const headTurnDirRef = useRef(1);
 
   const [loaded, setLoaded] = useState(false);
+  const [loadError, setLoadError] = useState<string | null>(null);
+  const [loadProgress, setLoadProgress] = useState(0);
 
   useEffect(() => {
     let cancelled = false;
 
     const load = async () => {
       try {
+        console.log('Loading avatar from:', avatarConfig.url);
         const { scene: avatarScene, mixer, clips } = await loadAvatarGLB(avatarConfig.url);
 
         if (cancelled) return;
 
-        avatarScene.scale.setScalar(1);
-        avatarScene.position.set(0, 0, 0);
+        // Auto-scale and center the avatar in case it's not a standard scale
+        const box = new THREE.Box3().setFromObject(avatarScene);
+        const size = box.getSize(new THREE.Vector3());
+        
+        if (size.y > 0) {
+          const scale = 1.6 / size.y; // Target height of 1.6 units (meters)
+          avatarScene.scale.setScalar(scale);
+          avatarScene.updateMatrixWorld(true);
+          
+          // Recompute box after scaling to position correctly
+          const scaledBox = new THREE.Box3().setFromObject(avatarScene);
+          const center = scaledBox.getCenter(new THREE.Vector3());
+          
+          avatarScene.position.set(-center.x, -scaledBox.min.y, -center.z);
+        } else {
+          avatarScene.scale.setScalar(1);
+          avatarScene.position.set(0, 0, 0);
+        }
+        
+        if (avatarRef.current) {
+          groupRef.current?.remove(avatarRef.current);
+        }
         groupRef.current?.add(avatarScene);
         avatarRef.current = avatarScene;
         mixerRef.current = mixer;
@@ -122,18 +179,101 @@ function AvatarGLBScene({
 
         onAvatarLoaded?.({ boneCount, hasMorphTargets: hasMorph, clipNames });
         setLoaded(true);
-      } catch (err) {
+      } catch (err: any) {
         console.error('Failed to load avatar GLB:', err);
+        setLoadError(err.message || String(err));
       }
     };
 
     load();
-    return () => { cancelled = true; };
+    return () => {
+      cancelled = true;
+      if (avatarRef.current && groupRef.current) {
+        groupRef.current.remove(avatarRef.current);
+      }
+    };
   }, [avatarConfig.url]);
 
   const lerp = (a: number, b: number, t: number) => a + (b - a) * t;
 
   const easeInOut = (t: number) => (t < 0.5 ? 2 * t * t : 1 - Math.pow(-2 * t + 2, 2) / 2);
+
+  const getHandshapeBones = (shape: string, side: 'Right' | 'Left') => {
+    const bones: Record<string, {x: number, y: number, z: number}> = {};
+    const sign = side === 'Right' ? 1 : -1;
+    
+    // Curl goes mostly on Z axis for standard mixamo rig.
+    const setFinger = (finger: string, curl1: number, curl2: number, curl3: number) => {
+      bones[`${side}Hand${finger}1`] = { x: 0, y: 0, z: curl1 * sign * 1.5 };
+      bones[`${side}Hand${finger}2`] = { x: 0, y: 0, z: curl2 * sign * 1.5 };
+      bones[`${side}Hand${finger}3`] = { x: 0, y: 0, z: curl3 * sign * 1.5 };
+    };
+    
+    const setThumb = (curl1: number, curl2: number, spread: number) => {
+      bones[`${side}HandThumb1`] = { x: spread * sign * 0.5, y: -spread * sign * 0.5, z: curl1 * sign * 1.0 };
+      bones[`${side}HandThumb2`] = { x: 0, y: 0, z: curl2 * sign * 1.0 };
+      bones[`${side}HandThumb3`] = { x: 0, y: 0, z: curl2 * sign * 1.0 };
+    }
+
+    setFinger('Index', 0, 0, 0);
+    setFinger('Middle', 0, 0, 0);
+    setFinger('Ring', 0, 0, 0);
+    setFinger('Pinky', 0, 0, 0);
+    setThumb(0, 0, 0);
+
+    const s = shape.toLowerCase();
+    if (s === 'fist' || s === 's' || s === 'a' || s === 'e' || s === 'm' || s === 'n' || s === 't') {
+      setFinger('Index', 1, 1, 1);
+      setFinger('Middle', 1, 1, 1);
+      setFinger('Ring', 1, 1, 1);
+      setFinger('Pinky', 1, 1, 1);
+      setThumb(0.5, 0.5, 0);
+    } else if (s === 'point' || s === 'd' || s === 'g' || s === 'p' || s === 'z') {
+      setFinger('Index', 0, 0, 0);
+      setFinger('Middle', 1, 1, 1);
+      setFinger('Ring', 1, 1, 1);
+      setFinger('Pinky', 1, 1, 1);
+      setThumb(1, 1, 1);
+    } else if (s === 'peace_sign' || s === 'v' || s === 'h' || s === 'k' || s === 'u') {
+      setFinger('Index', 0, 0, 0);
+      setFinger('Middle', 0, 0, 0);
+      setFinger('Ring', 1, 1, 1);
+      setFinger('Pinky', 1, 1, 1);
+      setThumb(1, 1, 1);
+    } else if (s === 'c' || s === 'c_shape' || s === 'o' || s === 'o_shape') {
+      setFinger('Index', 0.5, 0.5, 0.5);
+      setFinger('Middle', 0.5, 0.5, 0.5);
+      setFinger('Ring', 0.5, 0.5, 0.5);
+      setFinger('Pinky', 0.5, 0.5, 0.5);
+      setThumb(0.5, 0.5, 0.5);
+    } else if (s === 'i' || s === 'j' || s === 'pinky_up') {
+      setFinger('Index', 1, 1, 1);
+      setFinger('Middle', 1, 1, 1);
+      setFinger('Ring', 1, 1, 1);
+      setFinger('Pinky', 0, 0, 0);
+      setThumb(1, 1, 1);
+    } else if (s === 'w' || s === 'w_shape' || s === 'f' || s === 'ok_sign') {
+      setFinger('Index', 0.8, 0.8, 0.8);
+      setFinger('Middle', 0, 0, 0);
+      setFinger('Ring', 0, 0, 0);
+      setFinger('Pinky', 0, 0, 0);
+      setThumb(0.8, 0.8, 0.8);
+    } else if (s === 'y' || s === 'phone_sign') {
+      setFinger('Index', 1, 1, 1);
+      setFinger('Middle', 1, 1, 1);
+      setFinger('Ring', 1, 1, 1);
+      setFinger('Pinky', 0, 0, 0);
+      setThumb(0, 0, 0);
+    } else if (s === 'l' || s === 'l_shape') {
+      setFinger('Index', 0, 0, 0);
+      setFinger('Middle', 1, 1, 1);
+      setFinger('Ring', 1, 1, 1);
+      setFinger('Pinky', 1, 1, 1);
+      setThumb(0, 0, 0);
+    }
+
+    return bones;
+  };
 
   const getSignKeyframes = (sign: string): any[] => {
     const S: Record<string, any[]> = {
@@ -236,7 +376,36 @@ function AvatarGLBScene({
         { time: 0.6, bones: { RightHand: { x: 0, y: 0, z: 0 }, RightForeArm: { x: 0, y: 0, z: 0.4 }, LeftHand: { x: 0, y: 0, z: 0 }, LeftForeArm: { x: 0, y: 0, z: -0.4 } } },
       ],
     };
-    return S[sign] || [
+    
+    let kfs = S[sign];
+    
+    if (kfs) {
+      const eslSign = ESL_SIGNS[sign];
+      if (eslSign && eslSign.handshape) {
+        const rBones = getHandshapeBones(eslSign.handshape, 'Right');
+        const lBones = getHandshapeBones(eslSign.handshape, 'Left');
+        // We do a deep clone so we don't mutate the constant arrays
+        kfs = kfs.map(kf => ({
+          ...kf,
+          bones: { ...rBones, ...lBones, ...kf.bones }
+        }));
+      }
+      return kfs;
+    }
+    
+    // Check if it's fingerspelling (single letter)
+    if (sign.length === 1 && /[A-Z]/.test(sign)) {
+      const fsData = FINGERSPELLING[sign];
+      if (fsData) {
+        const hBones = getHandshapeBones(fsData.handshape, 'Right');
+        return [
+          { time: 0, bones: { RightForeArm: { x: 0.2, y: 0, z: 0.4 }, ...hBones } },
+          { time: fsData.duration, bones: { RightForeArm: { x: 0.2, y: 0, z: 0.4 }, ...hBones } }
+        ];
+      }
+    }
+
+    return [
       { time: 0, bones: { RightHand: { x: 0, y: 0, z: 0 }, RightForeArm: { x: 0, y: 0, z: 0.3 } } },
       { time: 0.3, bones: { RightHand: { x: 0.1, y: 0, z: 0 }, RightForeArm: { x: 0.05, y: 0, z: 0.3 } } },
       { time: 0.6, bones: { RightHand: { x: 0, y: 0.1, z: 0 }, RightForeArm: { x: 0, y: 0.05, z: 0.3 } } },
@@ -425,15 +594,32 @@ function AvatarGLBScene({
   }, [signs, loaded]);
 
   return (
-    <group ref={groupRef} position={[0, -1, 0]} />
+    <group ref={groupRef} position={[0, 0, 0]}>
+      {!loaded && !loadError && (
+        <Html center>
+          <div className="bg-white/10 text-white p-4 rounded-xl flex items-center gap-3">
+            <div className="h-5 w-5 animate-spin rounded-full border-2 border-white/40 border-t-white" />
+            <span className="text-sm">Loading avatar model...</span>
+          </div>
+        </Html>
+      )}
+      {loadError && (
+        <Html center>
+          <div className="bg-red-900/90 text-white p-4 rounded-xl max-w-xs text-center">
+            <p className="text-sm font-semibold mb-1">Failed to load avatar</p>
+            <p className="text-xs opacity-70 break-all">{loadError}</p>
+          </div>
+        </Html>
+      )}
+    </group>
   );
 }
 
 function CameraSetup() {
   const { camera } = useThree();
   useEffect(() => {
-    camera.position.set(0, 0.8, 1.4);
-    camera.lookAt(0, 0.6, 0);
+    camera.position.set(0, 1.0, 2.5);
+    camera.lookAt(0, 0.5, 0);
   }, [camera]);
   return null;
 }
@@ -463,7 +649,7 @@ export function GlbAvatarScene({
 }: GlbAvatarSceneProps) {
   return (
 <div style={{ width, height }} className="relative overflow-hidden rounded-2xl bg-slate-900">
-      <Canvas shadows camera={{ position: [0, 0.8, 1.4], fov: 28 }}>
+      <Canvas shadows camera={{ position: [0, 1.0, 2.5], fov: 35 }}>
         <CameraSetup />
         <ambientLight intensity={0.8} />
         <directionalLight position={[3, 5, 3]} intensity={2.5} castShadow shadow-mapSize-width={1024} shadow-mapSize-height={1024} />
@@ -484,9 +670,9 @@ export function GlbAvatarScene({
 
         {showControls && (
           <OrbitControls
-            target={[0, 0.6, 0]}
-            minDistance={0.7}
-            maxDistance={2.5}
+            target={[0, 0.5, 0]}
+            minDistance={1.0}
+            maxDistance={4.0}
             minPolarAngle={Math.PI / 10}
             maxPolarAngle={Math.PI / 2}
             enablePan={false}

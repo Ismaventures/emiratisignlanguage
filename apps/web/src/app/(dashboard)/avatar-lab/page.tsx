@@ -223,8 +223,8 @@ export default function AvatarLabPage() {
             signs={signs}
             autoPlay={true}
             height={600}
-            onAvatarLoaded={(info) => setAvatarInfo(info)}
-            onAnimationStateChange={(state, token) => {
+            onAvatarLoaded={(info: { boneCount: number; hasMorphTargets: boolean; clipNames: string[] }) => setAvatarInfo(info)}
+            onAnimationStateChange={(state: string, token: string) => {
               setCurrentSign(state === 'playing' ? token : '');
             }}
           />

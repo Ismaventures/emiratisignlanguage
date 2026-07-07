@@ -1,0 +1,62 @@
+[
+  {
+    "videoId": "vid_isharah_001",
+    "gestureLabel": "MABROUK",
+    "arabicText": "مبروك",
+    "englishText": "Congratulations",
+    "landmarksJson": {
+      "handshape": "flat",
+      "movement": "circular_forward",
+      "location": "chest"
+    },
+    "durationMs": 2500
+  },
+  {
+    "videoId": "vid_isharah_002",
+    "gestureLabel": "SHUKRAN",
+    "arabicText": "شكرا",
+    "englishText": "Thank you",
+    "landmarksJson": {
+      "handshape": "flat",
+      "movement": "forward",
+      "location": "mouth"
+    },
+    "durationMs": 1500
+  },
+  {
+    "videoId": "vid_isharah_003",
+    "gestureLabel": "KEF_HALAK",
+    "arabicText": "كيف حالك",
+    "englishText": "How are you",
+    "landmarksJson": {
+      "handshape": "point",
+      "movement": "up_down",
+      "location": "neutral"
+    },
+    "durationMs": 3000
+  },
+  {
+    "videoId": "vid_isharah_004",
+    "gestureLabel": "NAAM",
+    "arabicText": "نعم",
+    "englishText": "Yes",
+    "landmarksJson": {
+      "handshape": "fist",
+      "movement": "nod_hand",
+      "location": "neutral"
+    },
+    "durationMs": 1200
+  },
+  {
+    "videoId": "vid_isharah_005",
+    "gestureLabel": "LA",
+    "arabicText": "لا",
+    "englishText": "No",
+    "landmarksJson": {
+      "handshape": "point",
+      "movement": "shake_hand",
+      "location": "neutral"
+    },
+    "durationMs": 1200
+  }
+]
