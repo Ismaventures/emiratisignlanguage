@@ -13,6 +13,13 @@ export interface AvatarConfig {
 
 export const DEFAULT_AVATARS: AvatarConfig[] = [
   {
+    id: 'arabic-lady',
+    url: '/models/arabic-lady.glb',
+    gender: 'female',
+    skinTone: '#e8c39e',
+    label: 'Arabic Lady',
+  },
+  {
     id: 'xbot',
     url: '/models/xbot.glb',
     gender: 'male',
@@ -20,24 +27,10 @@ export const DEFAULT_AVATARS: AvatarConfig[] = [
     label: 'X Bot (Mixamo)',
   },
   {
-    id: 'rpm-male-01',
-    url: 'https://models.readyplayer.me/64bfa15f0e72c63e7c47603f.glb',
-    gender: 'male',
-    skinTone: '#c68642',
-    label: 'Ready Player Me (M)',
-  },
-  {
-    id: 'rpm-female-01',
-    url: 'https://models.readyplayer.me/64bfa1a7e09c0478b3f490b4.glb',
-    gender: 'female',
-    skinTone: '#c68642',
-    label: 'Ready Player Me (F)',
-  },
-  {
     id: 'soldier',
     url: '/models/soldier.glb',
     gender: 'male',
-    skinTone: '#d2a679',
+    skinTone: '#c68642',
     label: 'Soldier (Mixamo)',
   },
 ];
