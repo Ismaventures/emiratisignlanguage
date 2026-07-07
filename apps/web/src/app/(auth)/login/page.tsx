@@ -19,7 +19,7 @@ export default function LoginPage() {
     setSubmitting(true);
     try {
       await login(email, password);
-      window.location.href = '/dashboard';
+      window.location.href = '/translate';
     } catch (err: any) {
       setError(err.message || 'Login failed');
     } finally {

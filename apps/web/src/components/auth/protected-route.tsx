@@ -21,7 +21,7 @@ export function ProtectedRoute({ children, requiredRole }: ProtectedRouteProps) 
 
   useEffect(() => {
     if (!isLoading && user && requiredRole && user.role !== requiredRole) {
-      router.push('/dashboard');
+      router.push('/translate');
     }
   }, [isLoading, user, requiredRole, router]);
 

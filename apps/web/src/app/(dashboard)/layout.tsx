@@ -2,7 +2,6 @@
 
 import { ProtectedRoute } from '@/components/auth/protected-route';
 import { DashboardSidebar } from '@/components/layout/sidebar';
-import { DashboardHeader } from '@/components/layout/header';
 
 export default function DashboardLayout({
   children,
@@ -13,10 +12,7 @@ export default function DashboardLayout({
     <ProtectedRoute>
       <div className="flex min-h-screen bg-gray-50">
         <DashboardSidebar />
-        <div className="flex-1 flex flex-col">
-          <DashboardHeader />
-          <main className="flex-1 p-6">{children}</main>
-        </div>
+        <main className="flex-1 overflow-y-auto">{children}</main>
       </div>
     </ProtectedRoute>
   );
