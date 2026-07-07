@@ -1,160 +1,198 @@
 'use client';
 
-import { useState, useRef, useCallback, useEffect } from 'react';
-import { useSpeechRecognition } from '@/lib/use-speech-recognition';
-import { AudioVisualizer } from '@/components/ui/audio-visualizer';
-import { GlbAvatarViewer } from '@/components/avatar/glb-avatar-viewer';
+import { useState, useCallback, useEffect, useRef } from 'react';
+import dynamic from 'next/dynamic';
+import { translateToSignLanguage, type TranslationResult } from '@/lib/avatar/text-to-sign';
+import { ESL_SIGNS } from '@/lib/avatar/esl-sign-database';
+import { ARABIC_LADY } from '@/lib/avatar/rpm-avatar';
 import { useToast } from '@/components/ui/toast';
+
+const GlbAvatarScene = dynamic(
+  () => import('@/components/avatar/glb-avatar-scene').then((mod) => mod.GlbAvatarScene),
+  {
+    ssr: false,
+    loading: () => (
+      <div className="flex h-full w-full items-center justify-center rounded-2xl bg-slate-900">
+        <div className="text-center">
+          <div className="mb-3 inline-block h-8 w-8 animate-spin rounded-full border-4 border-white/20 border-t-white" />
+          <p className="text-sm text-white/60">Loading avatar...</p>
+        </div>
+      </div>
+    ),
+  },
+);
 
 export default function TranslatePage() {
   const [inputText, setInputText] = useState('');
-  const [translatedOutput, setTranslatedOutput] = useState('');
-  const [avatarText, setAvatarText] = useState('');
-  const [translating, setTranslating] = useState(false);
-  const messagesEndRef = useRef<HTMLDivElement>(null);
+  const [signs, setSigns] = useState<string[]>([]);
+  const [translation, setTranslation] = useState<TranslationResult | null>(null);
+  const [currentSign, setCurrentSign] = useState('');
+  const [isTranslating, setIsTranslating] = useState(false);
+  const [avatarHeight, setAvatarHeight] = useState(500);
+  const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const containerRef = useRef<HTMLDivElement>(null);
   const { addToast } = useToast();
 
-  const {
-    isListening,
-    isSupported: speechSupported,
-    transcript: speechTranscript,
-    interimTranscript,
-    error: speechError,
-    toggle: toggleListening,
-    stop: stopListening,
-  } = useSpeechRecognition('en-US');
-
   useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+    const el = containerRef.current;
+    if (!el) return;
+    const obs = new ResizeObserver((entries) => {
+      for (const entry of entries) setAvatarHeight(entry.contentRect.height);
+    });
+    obs.observe(el);
+    return () => obs.disconnect();
   }, []);
 
+  const runTranslation = useCallback(async (txt: string) => {
+    if (!txt.trim()) { setSigns([]); setTranslation(null); return; }
+    setIsTranslating(true);
+    try {
+      const result = await translateToSignLanguage(txt, true);
+      setTranslation(result);
+      setSigns(result.tokens.map((t) => t.uppercase));
+    } catch {
+      const result = await translateToSignLanguage(txt, false);
+      setTranslation(result);
+      setSigns(result.tokens.map((t) => t.uppercase));
+    } finally {
+      setIsTranslating(false);
+    }
+  }, []);
+
+  const handleInputChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
+    const val = e.target.value;
+    setInputText(val);
+    if (debounceRef.current) clearTimeout(debounceRef.current);
+    debounceRef.current = setTimeout(() => runTranslation(val), 400);
+  }, [runTranslation]);
+
+  const handleTranslateClick = useCallback(() => {
+    if (debounceRef.current) clearTimeout(debounceRef.current);
+    runTranslation(inputText);
+  }, [inputText, runTranslation]);
+
+  const handleQuickPhrase = useCallback((phrase: string) => {
+    setInputText(phrase);
+    runTranslation(phrase);
+  }, [runTranslation]);
+
   useEffect(() => {
-    if (speechTranscript) {
-      setInputText(speechTranscript);
-      setAvatarText(speechTranscript);
-    }
-  }, [speechTranscript]);
+    return () => { if (debounceRef.current) clearTimeout(debounceRef.current); };
+  }, []);
 
-  const handleListeningToggle = async () => {
-    if (!speechSupported) {
-      addToast('Speech recognition not supported. Try Chrome or Edge.', 'warning');
-      return;
-    }
-    if (!isListening) {
-      toggleListening();
-    } else {
-      stopListening();
-      if (speechTranscript.trim()) {
-        setTranslating(true);
-        setAvatarText(speechTranscript);
-        setTranslatedOutput(speechTranscript);
-        setTranslating(false);
-      }
-    }
-  };
-
-  const clearAll = () => {
-    setInputText('');
-    setTranslatedOutput('');
-    setAvatarText('');
-  };
+  const config = ARABIC_LADY;
+  const fingerSpellCount = translation?.tokens.filter((t) => t.needsFingerspelling).length || 0;
+  const directMatchCount = translation?.tokens.filter((t) => t.hasAnimation).length || 0;
 
   return (
-    <div className="flex h-full gap-4 p-4">
-      {/* Left: Avatar */}
-      <div className="flex-1 min-w-0">
-        <GlbAvatarViewer text={avatarText} />
+    <div className="flex h-screen gap-4 p-4">
+      {/* Left: Big Avatar */}
+      <div ref={containerRef} className="flex-1 min-w-0 relative">
+        <GlbAvatarScene
+          avatarConfig={config}
+          signs={signs}
+          autoPlay={true}
+          height={avatarHeight}
+          onAnimationStateChange={(state, token) => {
+            setCurrentSign(state === 'playing' ? token : '');
+          }}
+        />
       </div>
 
-      {/* Right: Controls & Output */}
+      {/* Right: Text Input + Phrases */}
       <div className="w-[380px] flex-shrink-0 flex flex-col gap-4 overflow-y-auto">
-        {/* Header */}
-        <div className="flex items-center justify-between">
-          <div>
-            <h1 className="text-lg font-bold text-gray-900">Translate</h1>
-            <p className="text-xs text-gray-500">Text to Emirati Sign Language</p>
-          </div>
-          <button
-            onClick={clearAll}
-            className="rounded-lg p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 transition-colors"
-            title="Clear"
-          >
-            🗑️
-          </button>
+        <div>
+          <h1 className="text-xl font-bold text-gray-900">Text to Sign</h1>
+          <p className="text-xs text-gray-500">Type English → Avatar signs in ESL</p>
         </div>
 
-        {/* Speech Input */}
+        {/* Input */}
         <div className="rounded-2xl border border-gray-200 bg-white p-4 shadow-sm">
-          <div className="flex flex-col items-center gap-3">
+          <div className="flex gap-2">
+            <input
+              type="text"
+              value={inputText}
+              onChange={handleInputChange}
+              onKeyDown={(e) => e.key === 'Enter' && handleTranslateClick()}
+              placeholder="Type English text..."
+              className="flex-1 rounded-xl border border-gray-300 px-4 py-2.5 text-sm focus:border-primary-500 focus:ring-2 focus:ring-primary-500/20 outline-none transition-all"
+            />
             <button
-              onClick={handleListeningToggle}
-              className={`flex h-16 w-16 items-center justify-center rounded-full transition-all ${
-                isListening
-                  ? 'bg-red-100 text-red-600 scale-110 shadow-lg shadow-red-500/25'
-                  : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
-              }`}
+              onClick={handleTranslateClick}
+              disabled={isTranslating || !inputText.trim()}
+              className="rounded-xl bg-primary-600 px-5 py-2.5 text-sm font-semibold text-white hover:bg-primary-700 disabled:opacity-50 transition-colors whitespace-nowrap"
             >
-              <svg className="h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z" />
-              </svg>
+              {isTranslating ? (
+                <span className="inline-flex items-center gap-2">
+                  <div className="h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent" />
+                  Signing
+                </span>
+              ) : 'Translate'}
             </button>
-            <p className="text-sm font-medium text-gray-900">
-              {isListening ? 'Listening...' : 'Click to speak'}
-            </p>
-            {interimTranscript && (
-              <p className="text-xs text-gray-400 italic">{interimTranscript}</p>
-            )}
-            {isListening && (
-              <div className="w-full max-w-[200px]">
-                <AudioVisualizer isActive={true} color="#16a34a" barCount={24} height={24} />
+          </div>
+        </div>
+
+        {/* Current Sign Info */}
+        {currentSign && ESL_SIGNS[currentSign] && (
+          <div className="rounded-xl bg-primary-50 border border-primary-200 px-4 py-3">
+            <div className="flex items-center gap-2 mb-1">
+              <span className="inline-block h-2 w-2 rounded-full bg-primary-500 animate-pulse" />
+              <p className="text-sm font-semibold text-primary-700">Signing: {currentSign}</p>
+            </div>
+            <p className="text-sm text-primary-600">{ESL_SIGNS[currentSign].english}</p>
+            <div className="mt-1 flex flex-wrap gap-x-3 gap-y-0.5 text-xs text-primary-500">
+              <span>Handshape: {ESL_SIGNS[currentSign].handshape}</span>
+              <span>Movement: {ESL_SIGNS[currentSign].movement}</span>
+              {ESL_SIGNS[currentSign].nonManual && <span>Expression: {ESL_SIGNS[currentSign].nonManual}</span>}
+            </div>
+          </div>
+        )}
+
+        {/* Token badges */}
+        {translation && translation.tokens.length > 0 && (
+          <div className="rounded-2xl border border-gray-200 bg-white p-4 shadow-sm">
+            <div className="flex items-center justify-between mb-2">
+              <h3 className="text-sm font-semibold text-gray-900">Sign Tokens ({translation.tokens.length})</h3>
+              <div className="flex gap-3 text-xs text-gray-500">
+                <span className="flex items-center gap-1">
+                  <span className="inline-block h-2 w-2 rounded-full bg-emerald-500" />{directMatchCount}
+                </span>
+                <span className="flex items-center gap-1">
+                  <span className="inline-block h-2 w-2 rounded-full bg-amber-500" />{fingerSpellCount}
+                </span>
               </div>
-            )}
-            {isListening && (
+            </div>
+            <div className="flex flex-wrap gap-1.5">
+              {translation.tokens.map((token, i) => (
+                <div
+                  key={`${token.uppercase}-${i}`}
+                  className={`inline-flex items-center gap-1 rounded-lg px-2.5 py-1 text-xs font-medium ${
+                    token.hasAnimation
+                      ? 'bg-emerald-100 text-emerald-700 border border-emerald-200'
+                      : 'bg-amber-100 text-amber-700 border border-amber-200'
+                  }`}
+                >
+                  {token.uppercase}
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* Quick Phrases */}
+        <div className="rounded-2xl border border-gray-200 bg-white p-4 shadow-sm">
+          <h3 className="text-sm font-semibold text-gray-900 mb-3">Quick Phrases</h3>
+          <div className="flex flex-wrap gap-1.5">
+            {['Hello', 'Thank you', 'Yes', 'No', 'Help', 'Goodbye', 'Please', 'How are you', 'I need help', 'Good morning'].map((phrase) => (
               <button
-                onClick={handleListeningToggle}
-                className="rounded-xl bg-red-500 px-5 py-1.5 text-xs font-medium text-white hover:bg-red-600 transition-colors"
+                key={phrase}
+                onClick={() => handleQuickPhrase(phrase)}
+                className="rounded-lg border border-gray-200 px-3 py-1.5 text-xs font-medium text-gray-700 hover:bg-gray-50 hover:border-gray-300 transition-all"
               >
-                Stop & Send
+                {phrase}
               </button>
-            )}
+            ))}
           </div>
-        </div>
-
-        {/* Translation Output */}
-        <div className="rounded-2xl border border-gray-200 bg-white shadow-sm">
-          <div className="border-b border-gray-100 px-4 py-3">
-            <h3 className="font-semibold text-gray-900 text-sm">Translation</h3>
-          </div>
-          <div className="p-4 min-h-[80px]">
-            {translating ? (
-              <div className="flex items-center justify-center py-6">
-                <div className="h-5 w-5 animate-spin rounded-full border-2 border-primary-600 border-t-transparent" />
-              </div>
-            ) : translatedOutput ? (
-              <p className="text-base font-medium text-gray-900">{translatedOutput}</p>
-            ) : (
-              <p className="text-sm text-gray-400 text-center py-6">
-                Type or speak to see translation
-              </p>
-            )}
-          </div>
-        </div>
-
-        {/* Quick phrases */}
-        <div className="flex flex-wrap gap-1.5">
-          {['Hello', 'Thank you', 'Yes', 'No', 'Help', 'Goodbye', 'Please'].map((phrase) => (
-            <button
-              key={phrase}
-              onClick={() => {
-                setInputText(phrase);
-                setAvatarText(phrase);
-                setTranslatedOutput(phrase);
-              }}
-              className="rounded-lg border border-gray-200 px-2.5 py-1.5 text-xs font-medium text-gray-600 hover:bg-gray-50 hover:border-gray-300 transition-all"
-            >
-              {phrase}
-            </button>
-          ))}
         </div>
       </div>
     </div>
