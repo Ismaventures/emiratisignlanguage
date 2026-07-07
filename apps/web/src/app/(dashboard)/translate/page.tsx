@@ -30,8 +30,18 @@ export default function TranslatePage() {
   const [isTranslating, setIsTranslating] = useState(false);
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const containerRef = useRef<HTMLDivElement>(null);
+  const [avatarHeight, setAvatarHeight] = useState(500);
   const { addToast } = useToast();
-  // Removed ResizeObserver to prevent canvas sizing loops
+
+  useEffect(() => {
+    const el = containerRef.current;
+    if (!el) return;
+    const obs = new ResizeObserver((entries) => {
+      for (const entry of entries) setAvatarHeight(entry.contentRect.height);
+    });
+    obs.observe(el);
+    return () => obs.disconnect();
+  }, []);
 
   const runTranslation = useCallback(async (txt: string) => {
     if (!txt.trim()) { setSigns([]); setTranslation(null); return; }
@@ -84,7 +94,7 @@ export default function TranslatePage() {
             signs={signs}
             autoPlay={true}
             width="100%"
-            height="100%"
+            height={avatarHeight}
             onAnimationStateChange={(state: string, token: string) => {
               setCurrentSign(state === 'playing' ? token : '');
             }}
