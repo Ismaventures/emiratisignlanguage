@@ -4,7 +4,7 @@ import { useState, useCallback, useEffect, useRef } from 'react';
 import dynamic from 'next/dynamic';
 import { translateToSignLanguage, type TranslationResult } from '@/lib/avatar/text-to-sign';
 import { ESL_SIGNS } from '@/lib/avatar/esl-sign-database';
-import { ARABIC_LADY } from '@/lib/avatar/rpm-avatar';
+import { DEFAULT_AVATAR } from '@/lib/avatar/rpm-avatar';
 import { useToast } from '@/components/ui/toast';
 
 const GlbAvatarScene = dynamic(
@@ -80,7 +80,7 @@ export default function TranslatePage() {
     return () => { if (debounceRef.current) clearTimeout(debounceRef.current); };
   }, []);
 
-  const config = ARABIC_LADY;
+  const config = DEFAULT_AVATAR;
   const fingerSpellCount = translation?.tokens.filter((t) => t.needsFingerspelling).length || 0;
   const directMatchCount = translation?.tokens.filter((t) => t.hasAnimation).length || 0;
 

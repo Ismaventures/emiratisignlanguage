@@ -10,6 +10,23 @@ const NAV_ITEMS = [
   { href: '/avatar-lab', label: 'Avatar Lab', icon: '🦸' },
 ];
 
+const ADVANCED_ITEMS = [
+  { href: '/dashboard', label: 'Dashboard', icon: '📊' },
+  { href: '/datasets', label: 'Datasets', icon: '📚' },
+  { href: '/gesture-lab', label: 'Gesture Lab', icon: '✋' },
+  { href: '/conversations', label: 'Conversations', icon: '💬' },
+  { href: '/history', label: 'History', icon: '🕐' },
+  { href: '/profile', label: 'Profile', icon: '👤' },
+  { href: '/settings', label: 'Settings', icon: '⚙️' },
+];
+
+const ADMIN_LINKS = [
+  { href: '/admin/analytics', label: 'Analytics', icon: '📈' },
+  { href: '/admin/datasets', label: 'Manage Datasets', icon: '🗂️' },
+  { href: '/admin/models', label: 'Models', icon: '🧠' },
+  { href: '/admin/users', label: 'Users', icon: '👥' },
+];
+
 export function DashboardSidebar() {
   const pathname = usePathname();
   const user = useAuthStore((s) => s.user);
@@ -68,6 +85,16 @@ export function DashboardSidebar() {
 
         <nav className="flex-1 space-y-1 overflow-y-auto px-4 py-4">
           {NAV_ITEMS.map((item) => navLink(item.href, item.label, item.icon))}
+
+          <div className="pt-5 pb-2">
+            <p className="px-4 text-[10px] font-semibold uppercase tracking-widest text-gray-600">Features</p>
+          </div>
+          {ADVANCED_ITEMS.map((item) => navLink(item.href, item.label, item.icon))}
+
+          <div className="pt-5 pb-2">
+            <p className="px-4 text-[10px] font-semibold uppercase tracking-widest text-gray-600">Admin</p>
+          </div>
+          {ADMIN_LINKS.map((item) => navLink(item.href, item.label, item.icon))}
         </nav>
 
         <div className="border-t border-white/5 p-4">

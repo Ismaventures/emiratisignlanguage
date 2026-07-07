@@ -11,15 +11,15 @@ export interface AvatarConfig {
   label: string;
 }
 
-export const ARABIC_LADY: AvatarConfig = {
-  id: 'arabic-lady',
-  url: '/models/arabic-lady.glb',
+export const DEFAULT_AVATAR: AvatarConfig = {
+  id: 'fashion-lady',
+  url: '/models/fashion-lady.glb',
   gender: 'female',
   skinTone: '#e8c39e',
-  label: 'Arabic Lady',
+  label: 'Fashion Lady',
 };
 
-export const DEFAULT_AVATARS: AvatarConfig[] = [ARABIC_LADY];
+export const DEFAULT_AVATARS: AvatarConfig[] = [DEFAULT_AVATAR];
 
 const RPM_BASE_URL = 'https://models.readyplayer.me';
 
