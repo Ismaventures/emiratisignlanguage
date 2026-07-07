@@ -11,7 +11,7 @@ const GlbAvatarScene = dynamic(
   {
     ssr: false,
     loading: () => (
-      <div className="flex h-full w-full items-center justify-center rounded-2xl bg-gray-950">
+      <div className="flex h-full w-full items-center justify-center rounded-2xl bg-gradient-to-b from-indigo-950 via-purple-950 to-slate-900">
         <div className="text-center">
           <div className="mb-3 inline-block h-8 w-8 animate-spin rounded-full border-4 border-white/20 border-t-white" />
           <p className="text-sm text-white/60">Loading avatar...</p>
@@ -69,8 +69,11 @@ export function GlbAvatarViewer({ text = '', avatarConfig }: GlbAvatarViewerProp
   }, []);
 
   useEffect(() => {
-    if (text) setInputText(text);
-  }, [text]);
+    if (text) {
+      setInputText(text);
+      runTranslation(text);
+    }
+  }, [text, runTranslation]);
 
   const handleInputChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
     const val = e.target.value;
@@ -78,6 +81,11 @@ export function GlbAvatarViewer({ text = '', avatarConfig }: GlbAvatarViewerProp
     if (debounceRef.current) clearTimeout(debounceRef.current);
     debounceRef.current = setTimeout(() => runTranslation(val), 400);
   }, [runTranslation]);
+
+  const handleTranslateClick = useCallback(() => {
+    if (debounceRef.current) clearTimeout(debounceRef.current);
+    runTranslation(inputText);
+  }, [inputText, runTranslation]);
 
   useEffect(() => {
     return () => {
@@ -145,14 +153,24 @@ export function GlbAvatarViewer({ text = '', avatarConfig }: GlbAvatarViewerProp
             type="text"
             value={inputText}
             onChange={handleInputChange}
+            onKeyDown={(e) => e.key === 'Enter' && handleTranslateClick()}
             placeholder="Type English text..."
             className="flex-1 rounded-xl border border-gray-300 px-4 py-2.5 text-sm placeholder:text-gray-400 focus:border-primary-500 focus:ring-2 focus:ring-primary-500/20 outline-none transition-all"
           />
-          {isTranslating && (
-            <div className="flex items-center px-3">
-              <div className="h-4 w-4 animate-spin rounded-full border-2 border-primary-600 border-t-transparent" />
-            </div>
-          )}
+          <button
+            onClick={handleTranslateClick}
+            disabled={isTranslating || !inputText.trim()}
+            className="rounded-xl bg-primary-600 px-5 py-2.5 text-sm font-semibold text-white hover:bg-primary-700 disabled:opacity-50 transition-colors whitespace-nowrap"
+          >
+            {isTranslating ? (
+              <span className="inline-flex items-center gap-2">
+                <div className="h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent" />
+                Signing
+              </span>
+            ) : (
+              'Translate'
+            )}
+          </button>
         </div>
       </div>
     </div>

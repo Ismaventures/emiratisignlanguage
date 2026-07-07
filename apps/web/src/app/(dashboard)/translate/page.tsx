@@ -60,7 +60,7 @@ export default function TranslatePage() {
   };
 
   return (
-    <div className="flex h-screen gap-4 p-4">
+    <div className="flex h-full gap-4 p-4">
       {/* Left: Avatar */}
       <div className="flex-1 min-w-0">
         <GlbAvatarViewer text={avatarText} />
