@@ -1,5 +1,5 @@
 import { create } from 'zustand';
-import type { User } from '@emirsign/types';
+import type { User } from '@/lib/types';
 
 interface AuthState {
   user: User | null;

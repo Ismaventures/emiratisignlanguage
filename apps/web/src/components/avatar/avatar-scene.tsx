@@ -123,18 +123,22 @@ function AvatarModelInner({
   useEffect(() => {
     if (!groupRef.current) return;
 
-    const animator = new ProceduralAnimator(groupRef.current);
-    animator.setCallbacks(
-      (sign) => onAnimationStateChange?.('playing', sign),
-      () => onAnimationStateChange?.('idle', ''),
-    );
-    animatorRef.current = animator;
+    const timer = setTimeout(() => {
+      const animator = new ProceduralAnimator(groupRef.current!);
+      animator.setCallbacks(
+        (sign) => onAnimationStateChange?.('playing', sign),
+        () => onAnimationStateChange?.('idle', ''),
+      );
+      animatorRef.current = animator;
 
-    eyeRef.current = new EyeController(groupRef.current);
-    breathRef.current = new BreathingController(groupRef.current);
-    idleRef.current = new IdleController(groupRef.current);
+      eyeRef.current = new EyeController(groupRef.current!);
+      breathRef.current = new BreathingController(groupRef.current!);
+      idleRef.current = new IdleController(groupRef.current!);
 
-    onAnimationReady?.(animator);
+      onAnimationReady?.(animator);
+    }, 100);
+
+    return () => clearTimeout(timer);
   }, []);
 
   useFrame((_, delta) => {

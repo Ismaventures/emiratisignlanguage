@@ -5,11 +5,11 @@ import * as THREE from 'three';
 export class IdleController {
   private root: THREE.Object3D;
   private timer = 0;
-  private headBone: THREE.Bone | null = null;
-  private spineBone: THREE.Bone | null = null;
-  private hipBone: THREE.Bone | null = null;
-  private leftArmBone: THREE.Bone | null = null;
-  private rightArmBone: THREE.Bone | null = null;
+  private headBone: THREE.Object3D | null = null;
+  private spineBone: THREE.Object3D | null = null;
+  private hipBone: THREE.Object3D | null = null;
+  private leftArmBone: THREE.Object3D | null = null;
+  private rightArmBone: THREE.Object3D | null = null;
 
   private headIdleSpeed = 0.3;
   private headIdleAmount = 0.02;
@@ -23,19 +23,17 @@ export class IdleController {
   constructor(root: THREE.Object3D) {
     this.root = root;
     root.traverse((child) => {
-      if (child instanceof THREE.Bone) {
-        const name = child.name.toLowerCase();
-        if (name.includes('neck') || name === 'head') {
-          this.headBone = child;
-        } else if (name.includes('spine') && (name.includes('0') || name.includes('1'))) {
-          this.spineBone = child;
-        } else if (name.includes('hip') || name === 'pelvis') {
-          this.hipBone = child;
-        } else if (name.includes('upperarm_l') || name === 'leftupperarm' || name === 'upperarml') {
-          this.leftArmBone = child;
-        } else if (name.includes('upperarm_r') || name === 'rightupperarm' || name === 'upperarmr') {
-          this.rightArmBone = child;
-        }
+      const name = child.name.toLowerCase();
+      if (name.includes('neck') || name === 'head') {
+        this.headBone = child;
+      } else if (name.includes('spine') && (name.includes('0') || name.includes('1'))) {
+        this.spineBone = child;
+      } else if (name.includes('hip') || name === 'pelvis') {
+        this.hipBone = child;
+      } else if (name.includes('upperarm_l') || name === 'leftupperarm' || name === 'upperarml') {
+        this.leftArmBone = child;
+      } else if (name.includes('upperarm_r') || name === 'rightupperarm' || name === 'upperarmr') {
+        this.rightArmBone = child;
       }
     });
   }

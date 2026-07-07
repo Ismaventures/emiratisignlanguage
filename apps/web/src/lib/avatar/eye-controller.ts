@@ -3,8 +3,8 @@
 import * as THREE from 'three';
 
 export class EyeController {
-  private leftEyeBone: THREE.Bone | null = null;
-  private rightEyeBone: THREE.Bone | null = null;
+  private leftEyeBone: THREE.Object3D | null = null;
+  private rightEyeBone: THREE.Object3D | null = null;
   private blinkTimer = 0;
   private nextBlinkTime = 2 + Math.random() * 4;
   private blinkPhase = 0;
@@ -19,13 +19,11 @@ export class EyeController {
 
   constructor(root: THREE.Object3D) {
     root.traverse((child) => {
-      if (child instanceof THREE.Bone) {
-        const name = child.name.toLowerCase();
-        if (name.includes('eye_l') || name.includes('lefteye') || name === 'eyeleft') {
-          this.leftEyeBone = child;
-        } else if (name.includes('eye_r') || name.includes('righteye') || name === 'eyeright') {
-          this.rightEyeBone = child;
-        }
+      const name = child.name.toLowerCase();
+      if (name.includes('eye_l') || name.includes('lefteye') || name === 'eyeleft') {
+        this.leftEyeBone = child;
+      } else if (name.includes('eye_r') || name.includes('righteye') || name === 'eyeright') {
+        this.rightEyeBone = child;
       }
     });
   }

@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useRef, useState, useCallback } from 'react';
-import { cn } from '@emirsign/utils';
+import { cn } from '@/lib/cn';
 
 interface CameraProps {
   onFrame?: (frame: ImageBitmap) => void;

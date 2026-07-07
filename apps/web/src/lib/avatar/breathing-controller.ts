@@ -3,27 +3,25 @@
 import * as THREE from 'three';
 
 export class BreathingController {
-  private chestBone: THREE.Bone | null = null;
-  private spineBone: THREE.Bone | null = null;
+  private chestBone: THREE.Object3D | null = null;
+  private spineBone: THREE.Object3D | null = null;
   private timer = 0;
   private breathRate = 3.5 + Math.random() * 1.5;
   private breathDepth = 0.015;
-  private shoulderL: THREE.Bone | null = null;
-  private shoulderR: THREE.Bone | null = null;
+  private shoulderL: THREE.Object3D | null = null;
+  private shoulderR: THREE.Object3D | null = null;
 
   constructor(root: THREE.Object3D) {
     root.traverse((child) => {
-      if (child instanceof THREE.Bone) {
-        const name = child.name.toLowerCase();
-        if (name.includes('chest') || name === 'spine02' || name === 'spine_02') {
-          this.chestBone = child;
-        } else if (name.includes('spine') && !name.includes('0') && !name.includes('1') && !name.includes('2')) {
-          this.spineBone = child;
-        } else if (name.includes('shoulder_l') || name === 'leftshoulder' || name === 'shoulderl') {
-          this.shoulderL = child;
-        } else if (name.includes('shoulder_r') || name === 'rightshoulder' || name === 'shoulderr') {
-          this.shoulderR = child;
-        }
+      const name = child.name.toLowerCase();
+      if (name.includes('chest') || name === 'spine02' || name === 'spine_02') {
+        this.chestBone = child;
+      } else if (name.includes('spine') && !name.includes('0') && !name.includes('1') && !name.includes('2')) {
+        this.spineBone = child;
+      } else if (name.includes('shoulder_l') || name === 'leftshoulder' || name === 'shoulderl') {
+        this.shoulderL = child;
+      } else if (name.includes('shoulder_r') || name === 'rightshoulder' || name === 'shoulderr') {
+        this.shoulderR = child;
       }
     });
   }

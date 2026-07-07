@@ -1,0 +1,9 @@
+{
+  "buildCommand": "cd apps/web && pnpm install && pnpm build",
+  "outputDirectory": "apps/web/.next",
+  "framework": "nextjs",
+  "installCommand": "pnpm install",
+  "env": {
+    "NEXT_PUBLIC_HUGGINGFACE_API_KEY": "@huggingface-api-key"
+  }
+}

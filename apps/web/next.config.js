@@ -1,12 +1,11 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-  transpilePackages: ['@emirsign/types', '@emirsign/utils', '@emirsign/config', '@emirsign/validators'],
-
+  output: 'standalone',
   images: {
     remotePatterns: [
       {
         protocol: 'https',
-        hostname: 'storage.emirsign.ai',
+        hostname: 'models.readyplayer.me',
       },
     ],
   },

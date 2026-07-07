@@ -5,7 +5,7 @@ import { useSpeechRecognition } from '@/lib/use-speech-recognition';
 import { useTextToSpeech } from '@/lib/use-text-to-speech';
 import { AudioVisualizer } from '@/components/ui/audio-visualizer';
 import { ProCamera, type DetectedGesture } from '@/components/camera/pro-camera';
-import { TextToSignViewer } from '@/components/avatar/text-to-sign-viewer';
+import { GlbAvatarViewer } from '@/components/avatar/glb-avatar-viewer';
 import { useToast } from '@/components/ui/toast';
 import { translateText } from '@/lib/ml-service';
 
@@ -316,7 +316,7 @@ export default function TranslatePage() {
               </div>
 
               {/* Avatar Signing Engine */}
-              <TextToSignViewer text={signText} />
+              <GlbAvatarViewer text={signText} />
             </>
           )}
         </div>

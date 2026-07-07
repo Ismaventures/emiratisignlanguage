@@ -1,4 +1,4 @@
-import { cn } from '@emirsign/utils';
+import { cn } from '@/lib/cn';
 
 interface CardProps {
   children: React.ReactNode;

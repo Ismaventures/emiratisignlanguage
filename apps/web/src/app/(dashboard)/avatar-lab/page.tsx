@@ -1,154 +1,260 @@
 'use client';
 
-import { useState, Suspense } from 'react';
+import React, { useState, Suspense } from 'react';
 import dynamic from 'next/dynamic';
-import { ANIMATION_DATABASE, type AnimationEntry } from '@/lib/avatar/animation-database';
+import { DEFAULT_AVATARS, type AvatarConfig } from '@/lib/avatar/rpm-avatar';
+import { ESL_SIGNS, getAllESLGlosses } from '@/lib/avatar/esl-sign-database';
 
-const AvatarScene = dynamic(
-  () => import('@/components/avatar/avatar-scene').then((mod) => mod.AvatarScene),
-  { ssr: false, loading: () => <div className="flex h-[500px] items-center justify-center rounded-2xl bg-gray-950"><p className="text-white/60">Loading 3D engine...</p></div> },
+const GlbAvatarScene = dynamic(
+  () => import('@/components/avatar/glb-avatar-scene').then((mod) => mod.GlbAvatarScene),
+  {
+    ssr: false,
+    loading: () => (
+      <div className="flex h-[500px] items-center justify-center rounded-2xl bg-gray-950">
+        <div className="text-center">
+          <div className="mb-3 inline-block h-8 w-8 animate-spin rounded-full border-4 border-white/20 border-t-white" />
+          <p className="text-sm text-white/60">Loading avatar...</p>
+        </div>
+      </div>
+    ),
+  },
 );
 
-const CATEGORIES = [
-  { id: 'all', label: 'All', icon: '📋' },
-  { id: 'greeting', label: 'Greetings', icon: '👋' },
-  { id: 'common', label: 'Common', icon: '💬' },
-  { id: 'question', label: 'Questions', icon: '❓' },
-  { id: 'emergency', label: 'Emergency', icon: '🚨' },
-  { id: 'medical', label: 'Medical', icon: '🏥' },
-  { id: 'daily', label: 'Daily', icon: '📅' },
-  { id: 'numbers', label: 'Numbers', icon: '🔢' },
-  { id: 'emotion', label: 'Emotions', icon: '😊' },
-] as const;
+const TEST_PHRASES = [
+  'Hello',
+  'Thank you',
+  'How are you',
+  'I need help',
+  'Good morning',
+  'Please',
+  'Yes',
+  'No',
+  'Goodbye',
+  'I love you',
+  'What is your name',
+  'Where is the school',
+  'My friend',
+  'Water please',
+  'Sorry',
+];
+
+// ESL signs available in the database
+const ESL_SIGN_LIST = Object.keys(ESL_SIGNS);
 
 export default function AvatarLabPage() {
-  const [selectedCategory, setSelectedCategory] = useState<string>('all');
-  const [searchQuery, setSearchQuery] = useState('');
-  const [selectedGesture, setSelectedGesture] = useState<AnimationEntry | null>(null);
-  const [currentToken, setCurrentToken] = useState('');
-  const [animState, setAnimState] = useState('idle');
-  const [animatorRef, setAnimatorRef] = useState<any>(null);
+  const [selectedAvatar, setSelectedAvatar] = useState<AvatarConfig>(DEFAULT_AVATARS[0]);
+  const [signs, setSigns] = useState<string[]>([]);
+  const [customText, setCustomText] = useState('');
+  const [currentSign, setCurrentSign] = useState<string>('');
+  const [avatarInfo, setAvatarInfo] = useState<{
+    boneCount: number;
+    hasMorphTargets: boolean;
+    clipNames: string[];
+  } | null>(null);
 
-  const filteredAnimations = ANIMATION_DATABASE.filter((a) => {
-    const matchesCategory = selectedCategory === 'all' || a.category === selectedCategory;
-    const matchesSearch =
-      !searchQuery ||
-      a.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      a.arabicName.includes(searchQuery) ||
-      a.tags.some((t) => t.includes(searchQuery.toLowerCase()));
-    return matchesCategory && matchesSearch;
-  });
-
-  const handlePlayGesture = (entry: AnimationEntry) => {
-    setSelectedGesture(entry);
-    if (animatorRef) {
-      animatorRef.stop();
-      animatorRef.setQueue([entry.name.toUpperCase()]);
-      animatorRef.play();
-    }
+  const handleTestSign = (word: string) => {
+    setSigns([word.toUpperCase()]);
   };
 
-  const handlePlayAll = () => {
-    if (filteredAnimations.length > 0 && animatorRef) {
-      setSelectedGesture(null);
-      animatorRef.stop();
-      animatorRef.setQueue(filteredAnimations.map((a) => a.name.toUpperCase()));
-      animatorRef.play();
-    }
-  };
-
-  const handleStop = () => {
-    animatorRef?.stop();
-    setCurrentToken('');
-    setAnimState('idle');
+  const handleTestPhrase = () => {
+    if (!customText.trim()) return;
+    const tokens = customText
+      .toUpperCase()
+      .replace(/[^A-Z\s]/g, '')
+      .split(/\s+/)
+      .filter(Boolean);
+    setSigns(tokens);
   };
 
   return (
     <div className="space-y-6">
       <div>
         <h1 className="text-2xl font-bold text-gray-900">Avatar Lab</h1>
-        <p className="text-sm text-gray-500">3D avatar gesture library — procedural animations, no GLB files needed</p>
+        <p className="text-sm text-gray-500">Realistic 3D sign language avatar with full body rigging</p>
       </div>
 
       <div className="grid gap-6 lg:grid-cols-3">
-        <div className="lg:col-span-2">
-          <Suspense fallback={<div className="flex h-[500px] items-center justify-center rounded-2xl bg-gray-950"><p className="text-white/60">Loading 3D engine...</p></div>}>
-            <AvatarScene
-              height={500}
-              onAnimationStateChange={(state, token) => { setAnimState(state); setCurrentToken(token); }}
-              onAnimationReady={(a) => setAnimatorRef(a)}
-            />
-          </Suspense>
-
-          {currentToken && animState === 'playing' && (
-            <div className="mt-3 rounded-xl bg-gray-900 p-3 text-center">
-              <p className="text-lg font-bold text-white">{currentToken}</p>
+        {/* Controls */}
+        <div className="space-y-4">
+          {/* Avatar Selection */}
+          <div className="rounded-2xl border border-gray-200 bg-white p-4 shadow-sm">
+            <h3 className="mb-3 text-sm font-semibold text-gray-900">Select Avatar</h3>
+            <div className="space-y-2">
+              {DEFAULT_AVATARS.map((av) => (
+                <button
+                  key={av.id}
+                  onClick={() => setSelectedAvatar(av)}
+                  className={`w-full rounded-xl border px-4 py-3 text-left transition-all ${
+                    selectedAvatar.id === av.id
+                      ? 'border-primary-500 bg-primary-50 ring-2 ring-primary-500/20'
+                      : 'border-gray-200 hover:bg-gray-50'
+                  }`}
+                >
+                  <div className="flex items-center gap-3">
+                    <div
+                      className="h-8 w-8 rounded-full border-2 border-white shadow-sm"
+                      style={{ backgroundColor: av.skinTone }}
+                    />
+                    <div>
+                      <p className="text-sm font-medium text-gray-900">{av.label}</p>
+                      <p className="text-xs text-gray-500">{av.gender} avatar</p>
+                    </div>
+                  </div>
+                </button>
+              ))}
             </div>
-          )}
 
-          <div className="mt-4 flex gap-2">
-            <button onClick={handlePlayAll} disabled={filteredAnimations.length === 0} className="rounded-xl bg-primary-600 px-5 py-2.5 text-sm font-medium text-white hover:bg-primary-700 disabled:opacity-50">
-              ▶ Play All ({filteredAnimations.length})
-            </button>
-            <button onClick={handleStop} disabled={animState === 'idle'} className="rounded-xl border border-gray-300 px-5 py-2.5 text-sm font-medium text-gray-600 hover:bg-gray-50 disabled:opacity-50">
-              ■ Stop
-            </button>
+            {avatarInfo && (
+              <div className="mt-3 rounded-xl bg-gray-50 p-3">
+                <p className="text-xs text-gray-500">Avatar Info</p>
+                <div className="mt-1 flex flex-wrap gap-2">
+                  <span className="inline-flex items-center rounded-full bg-emerald-100 px-2 py-0.5 text-[10px] font-medium text-emerald-700">
+                    {avatarInfo.boneCount} bones
+                  </span>
+                  {avatarInfo.hasMorphTargets && (
+                    <span className="inline-flex items-center rounded-full bg-blue-100 px-2 py-0.5 text-[10px] font-medium text-blue-700">
+                      Face rig
+                    </span>
+                  )}
+                  {avatarInfo.clipNames.length > 0 && (
+                    <span className="inline-flex items-center rounded-full bg-purple-100 px-2 py-0.5 text-[10px] font-medium text-purple-700">
+                      {avatarInfo.clipNames.length} animations
+                    </span>
+                  )}
+                </div>
+              </div>
+            )}
+          </div>
+
+          {/* Quick Test */}
+          <div className="rounded-2xl border border-gray-200 bg-white p-4 shadow-sm">
+            <h3 className="mb-3 text-sm font-semibold text-gray-900">Quick Test</h3>
+            <div className="flex flex-wrap gap-1.5">
+              {TEST_PHRASES.map((phrase) => (
+                <button
+                  key={phrase}
+                  onClick={() => handleTestSign(phrase)}
+                  className="rounded-lg border border-gray-200 px-2.5 py-1 text-xs text-gray-600 hover:bg-gray-50 hover:border-gray-300 transition-all"
+                >
+                  {phrase}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* Custom Input */}
+          <div className="rounded-2xl border border-gray-200 bg-white p-4 shadow-sm">
+            <h3 className="mb-3 text-sm font-semibold text-gray-900">Custom Sign</h3>
+            <div className="flex gap-2">
+              <input
+                type="text"
+                value={customText}
+                onChange={(e) => setCustomText(e.target.value)}
+                onKeyDown={(e) => e.key === 'Enter' && handleTestPhrase()}
+                placeholder="Type words..."
+                className="flex-1 rounded-xl border border-gray-300 px-3 py-2 text-sm placeholder:text-gray-400 focus:border-primary-500 focus:ring-2 focus:ring-primary-500/20 outline-none"
+              />
+              <button
+                onClick={handleTestPhrase}
+                className="rounded-xl bg-primary-600 px-4 py-2 text-sm font-medium text-white hover:bg-primary-700 transition-colors"
+              >
+                Sign
+              </button>
+            </div>
+          </div>
+
+          {/* Info */}
+          <div className="rounded-2xl border border-gray-200 bg-white p-4 shadow-sm">
+            <h3 className="mb-2 text-sm font-semibold text-gray-900">About This Avatar</h3>
+            <ul className="space-y-1.5 text-xs text-gray-600">
+              <li className="flex items-start gap-2">
+                <span className="mt-0.5 h-1.5 w-1.5 rounded-full bg-emerald-500 shrink-0" />
+                Ready Player Me realistic human model
+              </li>
+              <li className="flex items-start gap-2">
+                <span className="mt-0.5 h-1.5 w-1.5 rounded-full bg-emerald-500 shrink-0" />
+                Fully rigged with individual finger bones
+              </li>
+              <li className="flex items-start gap-2">
+                <span className="mt-0.5 h-1.5 w-1.5 rounded-full bg-emerald-500 shrink-0" />
+                52 ARKit blendshapes for facial expressions
+              </li>
+              <li className="flex items-start gap-2">
+                <span className="mt-0.5 h-1.5 w-1.5 rounded-full bg-emerald-500 shrink-0" />
+                Animics IK solver + blendshape manager
+              </li>
+              <li className="flex items-start gap-2">
+                <span className="mt-0.5 h-1.5 w-1.5 rounded-full bg-emerald-500 shrink-0" />
+                ESL sign database with BML notation
+              </li>
+              <li className="flex items-start gap-2">
+                <span className="mt-0.5 h-1.5 w-1.5 rounded-full bg-emerald-500 shrink-0" />
+                Mixamo-compatible skeleton for animation
+              </li>
+              <li className="flex items-start gap-2">
+                <span className="mt-0.5 h-1.5 w-1.5 rounded-full bg-amber-500 shrink-0" />
+                Custom Emirati clothing coming soon
+              </li>
+            </ul>
+          </div>
+
+          {/* ESL Sign Reference */}
+          <div className="rounded-2xl border border-gray-200 bg-white p-4 shadow-sm">
+            <h3 className="mb-3 text-sm font-semibold text-gray-900">ESL Signs ({ESL_SIGN_LIST.length})</h3>
+            <div className="flex flex-wrap gap-1.5 max-h-48 overflow-y-auto">
+              {ESL_SIGN_LIST.map((gloss) => (
+                <button
+                  key={gloss}
+                  onClick={() => handleTestSign(gloss)}
+                  className="rounded-lg border border-gray-200 px-2 py-0.5 text-[10px] text-gray-600 hover:bg-primary-50 hover:border-primary-300 hover:text-primary-700 transition-all"
+                  title={ESL_SIGNS[gloss].english}
+                >
+                  {gloss}
+                </button>
+              ))}
+            </div>
           </div>
         </div>
 
-        <div className="space-y-4">
-          <div className="rounded-2xl border border-gray-200 bg-white p-4 shadow-sm">
-            <input
-              type="text"
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              placeholder="Search gestures..."
-              className="mb-3 w-full rounded-xl border border-gray-300 px-3 py-2 text-sm focus:border-primary-500 focus:ring-2 focus:ring-primary-500/20 outline-none"
-            />
+        {/* Avatar Viewport */}
+        <div className="lg:col-span-2">
+          <GlbAvatarScene
+            avatarConfig={selectedAvatar}
+            signs={signs}
+            autoPlay={true}
+            height={600}
+            onAvatarLoaded={(info) => setAvatarInfo(info)}
+            onAnimationStateChange={(state, token) => {
+              setCurrentSign(state === 'playing' ? token : '');
+            }}
+          />
 
-            <div className="mb-3 flex flex-wrap gap-1.5">
-              {CATEGORIES.map((cat) => (
-                <button
-                  key={cat.id}
-                  onClick={() => setSelectedCategory(cat.id)}
-                  className={`rounded-lg px-2.5 py-1 text-xs font-medium transition-all ${
-                    selectedCategory === cat.id
-                      ? 'bg-primary-100 text-primary-700 border border-primary-200'
-                      : 'bg-gray-100 text-gray-600 border border-transparent hover:bg-gray-200'
-                  }`}
-                >
-                  {cat.icon} {cat.label}
-                </button>
-              ))}
-            </div>
-
-            <p className="text-xs text-gray-400">{filteredAnimations.length} gestures</p>
-          </div>
-
-          <div className="max-h-[500px] overflow-y-auto rounded-2xl border border-gray-200 bg-white shadow-sm">
-            <div className="divide-y divide-gray-100">
-              {filteredAnimations.map((entry) => (
-                <button
-                  key={entry.id}
-                  onClick={() => handlePlayGesture(entry)}
-                  className={`flex w-full items-center gap-3 p-3 text-left transition-all hover:bg-gray-50 ${
-                    selectedGesture?.id === entry.id ? 'bg-primary-50' : ''
-                  }`}
-                >
-                  <div className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-primary-100 to-emerald-100 text-sm font-bold text-primary-700">
-                    {entry.name[0]}
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <p className="text-sm font-medium text-gray-900 truncate">{entry.name}</p>
-                    <p className="text-xs text-gray-500 truncate">{entry.arabicName}</p>
-                  </div>
-                  <span className="rounded-md bg-emerald-100 px-2 py-0.5 text-[10px] font-medium text-emerald-700">
-                    Procedural
+          {/* Current Sign Info */}
+          {currentSign && ESL_SIGNS[currentSign] && (
+            <div className="mt-3 rounded-2xl border border-primary-200 bg-primary-50 p-4">
+              <div className="flex items-center gap-2 mb-2">
+                <span className="inline-block h-2.5 w-2.5 rounded-full bg-primary-500 animate-pulse" />
+                <h4 className="text-sm font-bold text-primary-800">Signing: {currentSign}</h4>
+              </div>
+              <p className="text-xs text-primary-600 mb-2">{ESL_SIGNS[currentSign].english}</p>
+              <div className="flex flex-wrap gap-2 text-[10px]">
+                <span className="rounded-full bg-primary-100 px-2 py-0.5 text-primary-700">
+                  Handshape: {ESL_SIGNS[currentSign].handshape}
+                </span>
+                <span className="rounded-full bg-primary-100 px-2 py-0.5 text-primary-700">
+                  Movement: {ESL_SIGNS[currentSign].movement}
+                </span>
+                <span className="rounded-full bg-primary-100 px-2 py-0.5 text-primary-700">
+                  Location: {ESL_SIGNS[currentSign].location}
+                </span>
+                {ESL_SIGNS[currentSign].nonManual && (
+                  <span className="rounded-full bg-amber-100 px-2 py-0.5 text-amber-700">
+                    Expression: {ESL_SIGNS[currentSign].nonManual}
                   </span>
-                </button>
-              ))}
+                )}
+              </div>
             </div>
-          </div>
+          )}
         </div>
       </div>
     </div>

@@ -210,7 +210,7 @@ const DEFAULT_POSE: SignKeyframe = {
 
 export class ProceduralAnimator {
   private root: THREE.Object3D | null = null;
-  private boneMap = new Map<string, THREE.Bone>();
+  private boneMap = new Map<string, THREE.Object3D>();
   private queue: string[] = [];
   private currentIndex = -1;
   private currentSign = '';
@@ -228,25 +228,23 @@ export class ProceduralAnimator {
   constructor(root: THREE.Object3D) {
     this.root = root;
     root.traverse((child) => {
-      if (child instanceof THREE.Bone) {
-        const name = child.name.toLowerCase();
-        if (name.includes('righthand') || name === 'handr' || name === 'right_hand') {
-          this.boneMap.set('RightHand', child);
-        } else if (name.includes('rightforearm') || name === 'lowerarmr' || name === 'right_forearm') {
-          this.boneMap.set('RightForeArm', child);
-        } else if (name.includes('rightupperarm') || name === 'upperarmr' || name === 'right_upperarm') {
-          this.boneMap.set('RightUpperArm', child);
-        } else if (name.includes('lefthand') || name === 'handl' || name === 'left_hand') {
-          this.boneMap.set('LeftHand', child);
-        } else if (name.includes('leftforearm') || name === 'lowerarml' || name === 'left_forearm') {
-          this.boneMap.set('LeftForeArm', child);
-        } else if (name.includes('leftupperarm') || name === 'upperarml' || name === 'left_upperarm') {
-          this.boneMap.set('LeftUpperArm', child);
-        } else if (name.includes('spine')) {
-          this.boneMap.set('Spine', child);
-        } else if (name.includes('neck') || name === 'head') {
-          this.boneMap.set('Head', child);
-        }
+      const name = child.name.toLowerCase();
+      if (name.includes('righthand') || name === 'handr' || name === 'right_hand') {
+        this.boneMap.set('RightHand', child as any);
+      } else if (name.includes('rightforearm') || name === 'lowerarmr' || name === 'right_forearm') {
+        this.boneMap.set('RightForeArm', child as any);
+      } else if (name.includes('rightupperarm') || name === 'upperarmr' || name === 'right_upperarm') {
+        this.boneMap.set('RightUpperArm', child as any);
+      } else if (name.includes('lefthand') || name === 'handl' || name === 'left_hand') {
+        this.boneMap.set('LeftHand', child as any);
+      } else if (name.includes('leftforearm') || name === 'lowerarml' || name === 'left_forearm') {
+        this.boneMap.set('LeftForeArm', child as any);
+      } else if (name.includes('leftupperarm') || name === 'upperarml' || name === 'left_upperarm') {
+        this.boneMap.set('LeftUpperArm', child as any);
+      } else if (name.includes('spine')) {
+        this.boneMap.set('Spine', child as any);
+      } else if (name.includes('head')) {
+        this.boneMap.set('Head', child as any);
       }
     });
   }

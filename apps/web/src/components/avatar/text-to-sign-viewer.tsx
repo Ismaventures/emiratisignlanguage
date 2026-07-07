@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useCallback, Suspense } from 'react';
+import React, { useState, useCallback, useEffect, Suspense } from 'react';
 import dynamic from 'next/dynamic';
 import { translateToSignLanguage, type TranslationResult, type SignToken } from '@/lib/avatar/text-to-sign';
 import { useToast } from '@/components/ui/toast';
@@ -29,9 +29,32 @@ export function TextToSignViewer({ text = '' }: TextToSignViewerProps) {
   const [useHuggingFace, setUseHuggingFace] = useState(true);
   const { addToast } = useToast();
 
+  useEffect(() => {
+    if (text && text !== inputText) {
+      setInputText(text);
+      runTranslation(text);
+    }
+  }, [text]);
+
+  const runTranslation = useCallback(async (txt: string) => {
+    if (!txt.trim()) return;
+    setIsTranslating(true);
+    try {
+      const result = await translateToSignLanguage(txt, useHuggingFace);
+      setTranslation(result);
+      setActiveText(txt);
+      addToast(`Mapped ${result.tokens.length} signs`, 'success');
+    } catch {
+      const result = await translateToSignLanguage(txt, false);
+      setTranslation(result);
+      setActiveText(txt);
+    } finally {
+      setIsTranslating(false);
+    }
+  }, [useHuggingFace, addToast]);
+
   const handleTranslate = useCallback(async () => {
     if (!inputText.trim()) return;
-
     setIsTranslating(true);
     try {
       const result = await translateToSignLanguage(inputText, useHuggingFace);
@@ -39,7 +62,6 @@ export function TextToSignViewer({ text = '' }: TextToSignViewerProps) {
       setActiveText(inputText);
       addToast(`Mapped ${result.tokens.length} signs`, 'success');
     } catch {
-      addToast('Translation failed, using fallback', 'warning');
       const result = await translateToSignLanguage(inputText, false);
       setTranslation(result);
       setActiveText(inputText);

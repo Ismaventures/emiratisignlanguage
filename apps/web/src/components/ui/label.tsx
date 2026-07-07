@@ -1,7 +1,7 @@
 'use client';
 
 import { forwardRef } from 'react';
-import { cn } from '@emirsign/utils';
+import { cn } from '@/lib/cn';
 
 export interface LabelProps extends React.LabelHTMLAttributes<HTMLLabelElement> {}
 

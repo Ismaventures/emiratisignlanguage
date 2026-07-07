@@ -167,7 +167,7 @@ export function buildAnimationSequence(tokens: SignToken[]): string[] {
 
 export async function translateToSignLanguage(
   text: string,
-  useHuggingFace = false,
+  useHuggingFace = true,
 ): Promise<TranslationResult> {
   const cacheKey = text.toLowerCase().trim();
   const cached = translationCache.get(cacheKey);
@@ -204,42 +204,20 @@ export async function translateToSignLanguage(
 }
 
 async function huggingFaceTranslate(normalizedText: string): Promise<string[]> {
-  const apiKey = process.env.NEXT_PUBLIC_HUGGINGFACE_API_KEY;
-  if (!apiKey) throw new Error('No HF API key');
-
-  const response = await fetch('https://router.huggingface.co/v1/chat/completions', {
+  const response = await fetch('/api/hf', {
     method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      Authorization: `Bearer ${apiKey}`,
-    },
-    body: JSON.stringify({
-      model: 'Qwen/Qwen3-8B',
-      messages: [
-        {
-          role: 'system',
-          content:
-            '/no_think\nConvert English sentences to Emirati Sign Language tokens. Remove articles, prepositions, auxiliary verbs. Convert pronouns. Return ONLY space-separated uppercase tokens. No explanation.',
-        },
-        { role: 'user', content: normalizedText },
-      ],
-      max_tokens: 100,
-      temperature: 0.1,
-    }),
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ text: normalizedText }),
   });
 
   if (!response.ok) {
-    throw new Error(`HF API ${response.status}`);
+    throw new Error(`HF proxy ${response.status}`);
   }
 
   const data = await response.json();
-  const output = data.choices?.[0]?.message?.content || '';
-  const tokens = output
-    .replace(/[^a-zA-Z0-9_\s]/g, '')
-    .split(/\s+/)
-    .filter(Boolean)
-    .map((t: string) => t.toUpperCase());
+  if (data.error) throw new Error(data.error);
 
+  const tokens: string[] = data.tokens || [];
   return tokens.length > 0 ? tokens : convertToSignGrammar(normalizedText);
 }
 

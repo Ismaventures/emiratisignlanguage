@@ -1,5 +1,5 @@
 import axios from 'axios';
-import type { ApiResponse } from '@emirsign/types';
+import type { ApiResponse } from '@/lib/types';
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api/v1';
 
