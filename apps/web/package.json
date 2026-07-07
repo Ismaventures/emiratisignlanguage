@@ -1,14 +1,11 @@
 {
-  "name": "@emirsign/web",
-  "version": "0.1.0",
+  "name": "emirsign-web",
+  "version": "1.0.0",
   "private": true,
   "scripts": {
     "dev": "next dev --port 3000",
     "build": "next build",
-    "start": "next start",
-    "lint": "next lint",
-    "typecheck": "tsc --noEmit",
-    "clean": "rm -rf .next node_modules"
+    "start": "next start"
   },
   "dependencies": {
     "@mediapipe/tasks-vision": "^0.10.35",
@@ -17,14 +14,12 @@
     "@tanstack/react-query": "^5.62.0",
     "@tensorflow/tfjs": "^4.22.0",
     "@tensorflow/tfjs-backend-webgl": "^4.22.0",
-    "@tensorflow/tfjs-core": "^4.22.0",
     "axios": "^1.7.0",
     "clsx": "^2.1.0",
     "lucide-react": "^0.468.0",
     "next": "^14.2.0",
     "react": "^18.3.0",
     "react-dom": "^18.3.0",
-    "tailwind-merge": "^2.6.0",
     "three": "0.170.0",
     "zustand": "^5.0.0"
   },
@@ -34,7 +29,7 @@
     "@types/react-dom": "^18.3.0",
     "@types/three": "^0.185.0",
     "autoprefixer": "^10.4.0",
-    "eslint": "^9.0.0",
+    "eslint": "^8.57.0",
     "eslint-config-next": "^14.2.0",
     "postcss": "^8.4.0",
     "tailwindcss": "^3.4.0",

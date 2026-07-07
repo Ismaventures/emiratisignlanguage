@@ -47,7 +47,7 @@ export default function ForgotPasswordPage() {
           <span className="text-xl font-bold text-primary-600">AI</span>
         </Link>
         <h1 className="text-2xl font-bold text-gray-900">Forgot password?</h1>
-        <p className="mt-1 text-sm text-gray-500">Enter your email and we'll send you a reset link</p>
+        <p className="mt-1 text-sm text-gray-500">Enter your email and we&apos;ll send you a reset link</p>
       </div>
 
       <div className="rounded-2xl border border-gray-200 bg-white p-8 shadow-sm">
