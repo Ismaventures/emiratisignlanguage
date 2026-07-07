@@ -11,29 +11,15 @@ export interface AvatarConfig {
   label: string;
 }
 
-export const DEFAULT_AVATARS: AvatarConfig[] = [
-  {
-    id: 'arabic-lady',
-    url: '/models/arabic-lady.glb',
-    gender: 'female',
-    skinTone: '#e8c39e',
-    label: 'Arabic Lady',
-  },
-  {
-    id: 'xbot',
-    url: '/models/xbot.glb',
-    gender: 'male',
-    skinTone: '#8d5524',
-    label: 'X Bot (Mixamo)',
-  },
-  {
-    id: 'soldier',
-    url: '/models/soldier.glb',
-    gender: 'male',
-    skinTone: '#c68642',
-    label: 'Soldier (Mixamo)',
-  },
-];
+export const ARABIC_LADY: AvatarConfig = {
+  id: 'arabic-lady',
+  url: '/models/arabic-lady.glb',
+  gender: 'female',
+  skinTone: '#e8c39e',
+  label: 'Arabic Lady',
+};
+
+export const DEFAULT_AVATARS: AvatarConfig[] = [ARABIC_LADY];
 
 const RPM_BASE_URL = 'https://models.readyplayer.me';
 
