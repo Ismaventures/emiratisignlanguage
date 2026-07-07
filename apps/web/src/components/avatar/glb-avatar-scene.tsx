@@ -432,8 +432,8 @@ function AvatarGLBScene({
 function CameraSetup() {
   const { camera } = useThree();
   useEffect(() => {
-    camera.position.set(0, 0.9, 1.5);
-    camera.lookAt(0, 0.7, 0);
+    camera.position.set(0, 0.8, 1.4);
+    camera.lookAt(0, 0.6, 0);
   }, [camera]);
   return null;
 }
@@ -462,14 +462,14 @@ export function GlbAvatarScene({
   onAvatarLoaded,
 }: GlbAvatarSceneProps) {
   return (
-    <div style={{ width, height }} className="relative overflow-hidden rounded-2xl bg-gradient-to-b from-indigo-950 via-purple-950 to-slate-900">
-      <Canvas shadows camera={{ position: [0, 0.9, 1.5], fov: 30 }}>
+<div style={{ width, height }} className="relative overflow-hidden rounded-2xl bg-slate-900">
+      <Canvas shadows camera={{ position: [0, 0.8, 1.4], fov: 28 }}>
         <CameraSetup />
-        <ambientLight intensity={0.7} />
-        <directionalLight position={[3, 4, 3]} intensity={2.0} castShadow shadow-mapSize-width={1024} shadow-mapSize-height={1024} />
-        <pointLight position={[-2, 2, -1]} intensity={0.5} color="#60a5fa" />
-        <pointLight position={[2, 1, 1]} intensity={0.4} color="#fbbf24" />
-        <hemisphereLight args={['#b1e1ff', '#000000', 0.3]} />
+        <ambientLight intensity={0.8} />
+        <directionalLight position={[3, 5, 3]} intensity={2.5} castShadow shadow-mapSize-width={1024} shadow-mapSize-height={1024} />
+        <pointLight position={[-2, 3, -1]} intensity={0.6} color="#93c5fd" />
+        <pointLight position={[2, 2, 1]} intensity={0.5} color="#fde68a" />
+        <hemisphereLight args={['#f0f9ff', '#1e293b', 0.5]} />
 
         <AvatarGLBScene
           avatarConfig={avatarConfig}
@@ -484,10 +484,10 @@ export function GlbAvatarScene({
 
         {showControls && (
           <OrbitControls
-            target={[0, 0.7, 0]}
-            minDistance={0.8}
-            maxDistance={3}
-            minPolarAngle={Math.PI / 8}
+            target={[0, 0.6, 0]}
+            minDistance={0.7}
+            maxDistance={2.5}
+            minPolarAngle={Math.PI / 10}
             maxPolarAngle={Math.PI / 2}
             enablePan={false}
           />

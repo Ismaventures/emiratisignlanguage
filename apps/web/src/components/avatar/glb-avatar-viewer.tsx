@@ -11,7 +11,7 @@ const GlbAvatarScene = dynamic(
   {
     ssr: false,
     loading: () => (
-      <div className="flex h-full w-full items-center justify-center rounded-2xl bg-gradient-to-b from-indigo-950 via-purple-950 to-slate-900">
+      <div className="flex h-full w-full items-center justify-center rounded-2xl bg-slate-900">
         <div className="text-center">
           <div className="mb-3 inline-block h-8 w-8 animate-spin rounded-full border-4 border-white/20 border-t-white" />
           <p className="text-sm text-white/60">Loading avatar...</p>
